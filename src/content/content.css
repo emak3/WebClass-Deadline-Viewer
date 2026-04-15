@@ -1,0 +1,1152 @@
+/* =============================================================================
+   WebClass-Deadline-Viewer — content styles（共有トークンは ../shared/styles/base.css）
+   レイアウトは「モード別」に分離（ページの Bootstrap / flex に依存しないよう変数で調整）
+   ============================================================================= */
+
+#wcdv-root.wcdv-embedded {
+  --wcdv-gap: 16px;
+  --wcdv-panel-max: 400px;
+  --wcdv-panel-preferred: clamp(240px, 32vw, 380px);
+  --wcdv-panel-outer-max-h: min(78vh, 720px);
+
+  margin: 0;
+  font-family: var(--wcdv-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--wcdv-text-body);
+  box-sizing: border-box;
+  isolation: isolate;
+}
+
+#wcdv-root.wcdv-embedded * {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------
+   「参加しているコース」直上 — 閉じられるパネルシェル
+   --------------------------------------------------------------------------- */
+
+#wcdv-course-list-panel-shell {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 16px;
+
+  /* WebClass 寄りのパネル用トークン（Scroll Area 風の1枚面） */
+  --wcdv-scroll-surface: var(--wcdv-bg-surface);
+  --wcdv-scroll-chrome: var(--wcdv-bg-muted);
+  --wcdv-scroll-border: var(--wcdv-border-soft);
+  --wcdv-scroll-shadow: var(--wcdv-shadow-sm);
+}
+
+/*
+ * スクロール領域: 21st.dev の Scroll Area 系のように
+ * ・外周は1本の角丸枠＋ごく薄い影のみ（二重のインセット淵は使わない）
+ * ・トラックはフラット、サムは細く丸いピル型（WebKit / Firefox）
+ */
+#wcdv-course-list-panel-shell #wcdv-panel-expanded {
+  display: flex;
+  flex-direction: column;
+  max-height: min(52vh, 480px);
+  overflow: hidden;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--wcdv-scroll-surface);
+  border: 1px solid var(--wcdv-scroll-border);
+  border-radius: 10px;
+  box-shadow: var(--wcdv-scroll-shadow);
+}
+
+#wcdv-course-list-panel-shell #wcdv-root.wcdv-embedded {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 2px 4px 6px 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* バーが出ないときも、出たときと同じ右余白（コンテンツ幅）を保つ */
+  scrollbar-gutter: stable;
+  border-radius: 0 0 9px 9px;
+  background: var(--wcdv-scroll-surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--wcdv-scroll-thumb) transparent;
+}
+
+#wcdv-course-list-panel-shell #wcdv-root.wcdv-embedded::-webkit-scrollbar {
+  width: 8px;
+}
+
+#wcdv-course-list-panel-shell #wcdv-root.wcdv-embedded::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#wcdv-course-list-panel-shell #wcdv-root.wcdv-embedded::-webkit-scrollbar-thumb {
+  background-color: var(--wcdv-scroll-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+#wcdv-course-list-panel-shell #wcdv-root.wcdv-embedded::-webkit-scrollbar-thumb:hover {
+  background-color: var(--wcdv-scroll-thumb-hover);
+  background-clip: content-box;
+}
+
+#wcdv-course-list-panel-shell .wcdv-wc-card {
+  display: block;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+#wcdv-course-list-panel-shell .wcdv-wc-list {
+  max-height: none;
+  overflow-y: visible;
+  /* 縦スクロールは #wcdv-root 側の gutter のみ（二重余白にしない） */
+  scrollbar-gutter: auto;
+}
+
+#wcdv-course-list-panel-shell.wcdv-course-list-panel-shell--collapsed #wcdv-panel-expanded {
+  display: none !important;
+}
+
+#wcdv-course-list-panel-shell:not(.wcdv-course-list-panel-shell--collapsed) .wcdv-panel-reopen-btn {
+  display: none !important;
+}
+
+.wcdv-panel-reopen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  color: var(--wcdv-text);
+  background: var(--wcdv-bg-muted);
+  border: 1px solid var(--wcdv-border-soft);
+  border-radius: 10px;
+  box-shadow: var(--wcdv-shadow-sm);
+}
+
+.wcdv-panel-reopen-btn:hover {
+  background: #eef2f8;
+}
+
+.wcdv-panel-reopen-label {
+  flex: 0 1 auto;
+}
+
+#wcdv-panel-expanded {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.wcdv-panel-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 9px 12px 10px;
+  border-radius: 10px 10px 0 0;
+  background: var(--wcdv-bg-muted);
+  border: none;
+  border-bottom: 1px solid var(--wcdv-border-light);
+}
+
+.wcdv-panel-menu-title {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--wcdv-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.wcdv-panel-menu-actions {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wcdv-panel-menu-actions .wcdv-wc-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* タイトル行の直下 — ラジオ・チェック（スクロール域の外） */
+#wcdv-panel-filters-host {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8edf4;
+  /* #wcdv-root 外に出るため、ページ側の大きい line-height を継承しない */
+  font-family: var(--wcdv-font-ui);
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--wcdv-text-body);
+}
+
+#wcdv-panel-filters-host .wcdv-wc-filters {
+  margin: 0;
+  border: none;
+  padding: 0 2px;
+  background: transparent;
+}
+
+/* シェル内はタイトル行＋メニューに集約するため、フォールバック用の chrome 行を隠す */
+#wcdv-root.wcdv-toolbar-top .wcdv-wc-standalone-chrome {
+  display: none !important;
+}
+
+.wcdv-panel-menu #wcdv-badge.wcdv-wc-count {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wcdv-text-muted);
+}
+
+/* ヘッダ「消去」の隣 — 一般的な副次ボタンとして折りたたみ */
+#wcdv-panel-collapse.wcdv-panel-collapse-in-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+#wcdv-panel-collapse.wcdv-panel-collapse-in-actions::after {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 1px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 5px solid currentColor;
+  opacity: 0.65;
+  transform: translateY(1px);
+}
+
+.wcdv-panel-chevron {
+  display: block;
+  flex-shrink: 0;
+}
+
+.wcdv-panel-chevron--down {
+  transform: rotate(180deg);
+}
+
+.wcdv-panel-reopen-btn .wcdv-panel-chevron {
+  opacity: 0.85;
+}
+
+/* WebClass コース一覧に寄せた配色（パネル内は淡い青灰の一枚トーン） */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-standalone-chrome {
+  background: var(--wcdv-bg-muted);
+  border-bottom: 1px solid var(--wcdv-border-light);
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-standalone-title {
+  color: var(--wcdv-text);
+  font-size: 14px;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-count {
+  color: var(--wcdv-text-muted);
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-btn-primary {
+  background: #4a6fa5;
+  border-color: #3d5d8c;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-btn-primary:hover {
+  background: #3f6090;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-btn-sub {
+  background: #fff;
+  border-color: #d0dae6;
+  color: #334155;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-btn-sub:hover {
+  background: #f8fafc;
+  border-color: #c2cedd;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-filters {
+  background: #fafbfd;
+  border-bottom: 1px solid #e8edf4;
+  color: var(--wcdv-text-body);
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-card {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* WebClass 教材一覧カード（Vue 版 list-group-item + cl-contentsList_*）に合わせたレイアウト */
+#wcdv-root.wcdv-wc-skin-wc #wcdv-list.list-group {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2e6ec;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+
+#wcdv-root.wcdv-wc-skin-wc #wcdv-list.list-group .cl-contentsList_listGroupItem.wcdv-wc-item--wc {
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid #e2e6ec;
+  border-radius: 0;
+  background: #fff;
+}
+
+#wcdv-root.wcdv-wc-skin-wc #wcdv-list.list-group .cl-contentsList_listGroupItem.wcdv-wc-item--wc:last-child {
+  border-bottom: none;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 20px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetail {
+  flex: 0 0 auto;
+  min-width: 72px;
+  text-align: right;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetailList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetailListItem {
+  margin: 0;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetailListItemData a {
+  color: #0066c0;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetailListItemData a:hover {
+  text-decoration: underline;
+  color: #004a99;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_listGroupItem .cm-contentsList_contentName {
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #222;
+}
+
+/* WebClass が .cm-contentsList_contentName に付ける疑似要素と自前バッジが重なるのを防ぐ */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc .cm-contentsList_contentName::before,
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc .cm-contentsList_contentName::after {
+  content: none !important;
+  display: none !important;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentName a.wcdv-wc-title-a {
+  color: #0066c0;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentName a.wcdv-wc-title-a:hover {
+  text-decoration: underline;
+  color: #004a99;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentName > div {
+  color: #222;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-card-subline {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #555;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cl-contentsList_categoryLabel {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #666;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentDetailListItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentDetailListItem:first-of-type {
+  margin-top: 0;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentDetailListItemLabel {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  color: #555;
+  font-weight: normal;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .cm-contentsList_contentDetailListItemData {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  color: var(--wcdv-text-body);
+  text-align: left;
+}
+
+#wcdv-root.wcdv-wc-skin-wc a.course-name {
+  color: #0066c0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: normal;
+}
+
+#wcdv-root.wcdv-wc-skin-wc a.course-name:hover {
+  text-decoration: underline;
+  color: #004a99;
+}
+
+/* 締切までの余裕でカウントダウン色を変える（行クラスと組み合わせ） */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc.wcdv-wc-item--deadline-open .wcdv-wc-countdown {
+  color: #1b5e20;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc.wcdv-wc-item--deadline-soon .wcdv-wc-countdown {
+  color: #e65100;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc.wcdv-wc-item--deadline-ended .wcdv-wc-countdown {
+  color: #c62828;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc.wcdv-wc-item--deadline-upcoming .wcdv-wc-countdown {
+  color: #546e7a;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc .cm-contentsList_contentDetailListItemData.wcdv-wc-countdown {
+  margin-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------
+   .row 内で時間割列を置き換える専用ホスト（ページ側の div とは独立したグリッド）
+   --------------------------------------------------------------------------- */
+
+.wcdv-list-timetable-host {
+  display: grid;
+  grid-template-columns: minmax(220px, min(360px, 38vw)) max-content;
+  gap: 16px 20px;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.row > .wcdv-list-timetable-host {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wcdv-list-timetable-host__list {
+  min-width: 0;
+}
+
+.wcdv-list-timetable-host__table {
+  width: max-content;
+  max-width: none;
+  min-width: min-content;
+}
+
+.wcdv-list-timetable-host__table table {
+  width: auto;
+  max-width: none;
+}
+
+.wcdv-list-timetable-host__list > #wcdv-root.wcdv-embedded.wcdv-in-row-host {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: none;
+  align-self: stretch;
+}
+
+@media (max-width: 1100px) {
+  .wcdv-list-timetable-host {
+    grid-template-columns: 1fr;
+  }
+
+  .wcdv-list-timetable-host__table {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   埋め込みモード: 時間割の横（.wcdv-timetable-wrap / .row / 任意 flex 行の子）
+   --------------------------------------------------------------------------- */
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: flex-start;
+  max-height: var(--wcdv-panel-outer-max-h);
+  margin: 0;
+}
+
+/* 行の子として「列の横」に置いたとき（Bootstrap .row の直接子など） */
+.row > #wcdv-root.wcdv-embedded.wcdv-beside-timetable:not(.wcdv-in-left-slot) {
+  flex: 0 0 var(--wcdv-panel-preferred);
+  width: var(--wcdv-panel-preferred);
+  max-width: min(var(--wcdv-panel-max), 100%);
+  min-width: 0;
+}
+
+/* 左ガター列など「列の中」に入れたときは列幅いっぱい */
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable.wcdv-in-left-slot {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+  max-height: min(72vh, 640px);
+  overflow: hidden;
+}
+
+/* flex 行の直接子で列クラスが無い場合の既定（.row より弱いセレクタで上書き可） */
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable:not(.wcdv-in-left-slot) {
+  flex: 0 1 var(--wcdv-panel-preferred);
+  width: var(--wcdv-panel-preferred);
+  max-width: min(var(--wcdv-panel-max), 100%);
+  min-width: min(240px, 100%);
+}
+
+/* ガター経由マウント時の見た目フラグ（リトライ判定用クラスと併用） */
+#wcdv-root.wcdv-embedded.wcdv-page-left-gutter.wcdv-beside-timetable:not(.wcdv-in-left-slot) {
+  max-height: var(--wcdv-panel-outer-max-h);
+}
+
+/* 拡張側で包んだ flex コンテナ */
+.wcdv-timetable-wrap {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--wcdv-gap) 20px;
+  width: 100%;
+  margin: 4px 0 18px;
+}
+
+/* 課題実施状況行の下：左に一覧・右に時間割（右列は intrinsic 幅で潰さない） */
+.row + .wcdv-list-timetable-grid,
+.row + .wcdv-after-dashboard-panel,
+.row + .wcdv-timetable-wrap {
+  margin-top: 10px;
+}
+
+.wcdv-list-timetable-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, min(360px, 36vw)) max-content;
+  gap: 20px 24px;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 18px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.wcdv-list-timetable-grid__list {
+  min-width: 0;
+}
+
+.wcdv-list-timetable-grid__table {
+  justify-self: start;
+  width: max-content;
+  max-width: none;
+  min-width: min-content;
+}
+
+.wcdv-list-timetable-grid__table table {
+  width: auto;
+  max-width: none;
+}
+
+.wcdv-list-timetable-grid__list > #wcdv-root.wcdv-embedded.wcdv-in-list-table-grid {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: none;
+  align-self: stretch;
+}
+
+.wcdv-after-dashboard-panel {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 18px;
+  clear: both;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-below-dashboard {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  max-height: none;
+  align-self: stretch;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-below-dashboard .wcdv-wc-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-below-dashboard .wcdv-wc-list {
+  flex: none;
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
+}
+
+.wcdv-timetable-wrap > *:not(#wcdv-root) {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .wcdv-list-timetable-grid {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .wcdv-list-timetable-grid__table {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  #wcdv-root.wcdv-embedded.wcdv-beside-timetable {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  #wcdv-root.wcdv-embedded.wcdv-beside-timetable.wcdv-in-left-slot {
+    max-height: none;
+  }
+
+  .wcdv-timetable-wrap {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .wcdv-timetable-wrap > *:not(#wcdv-root) {
+    order: 1;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #wcdv-root.wcdv-embedded.wcdv-beside-timetable {
+    order: 2;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   スタンドアロン（ページ末尾など）
+   --------------------------------------------------------------------------- */
+
+#wcdv-root.wcdv-embedded.wcdv-body-anchor {
+  display: block;
+  max-width: 960px;
+  margin: 1.5rem auto 2rem;
+  padding: 0 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   カード: 横並び時は縦 flex でリスト領域にスクロールを集約
+   --------------------------------------------------------------------------- */
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-standalone-chrome,
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-progress,
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-filters {
+  flex-shrink: 0;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   カード UI（コンポーネント）
+   --------------------------------------------------------------------------- */
+
+.wcdv-wc-card {
+  border: 1px solid #cfd8e3;
+  border-radius: 3px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.wcdv-wc-standalone-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 8px 12px;
+  background: #eef2f7;
+  border-bottom: 1px solid #d5dde8;
+}
+
+.wcdv-wc-standalone-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.45;
+  flex: 1;
+  min-width: 160px;
+}
+
+.wcdv-wc-count {
+  font-weight: 600;
+  color: #444;
+}
+
+.wcdv-wc-progress {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #5c6b78;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.wcdv-wc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.wcdv-wc-btn-primary {
+  padding: 4px 12px;
+  border: 1px solid #5a7aad;
+  border-radius: 3px;
+  background: #5f7eb1;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wcdv-wc-btn-primary:hover {
+  background: #547099;
+}
+
+.wcdv-wc-btn-sub {
+  padding: 4px 10px;
+  border: 1px solid #b8c5d4;
+  border-radius: 3px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wcdv-wc-btn-sub:hover {
+  background: #f6f8fb;
+}
+
+#wcdv-clear.wcdv-wc-btn-sub {
+  border-color: #d4c4c4;
+  color: #6b3a3a;
+}
+
+.wcdv-wc-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 8px 12px;
+  background: #fafbfc;
+  border-bottom: 1px solid #e4e9ef;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--wcdv-text-body);
+}
+
+.wcdv-wc-filter-label,
+.wcdv-wc-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wcdv-wc-filter-check {
+  margin-left: auto;
+}
+
+/* ネイティブ control のレイアウト枠と文字行を、同じ cross-axis 中央に載せる */
+.wcdv-wc-filter-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+}
+
+.wcdv-wc-filter-control input[type="radio"],
+.wcdv-wc-filter-control input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #4a6fa5;
+}
+
+.wcdv-wc-filter-text {
+  display: flex;
+  align-items: center;
+  min-height: 16px;
+  line-height: 1.25;
+  font-size: inherit;
+}
+
+.wcdv-wc-list {
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-body-anchor .wcdv-wc-list {
+  max-height: min(62vh, 520px);
+}
+
+.wcdv-wc-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eceff3;
+}
+
+/* 締切状態: 左のみ色付きバー（背景は付けず、端を少し丸める） */
+.wcdv-wc-item--deadline-open,
+.wcdv-wc-item--deadline-soon,
+.wcdv-wc-item--deadline-ended,
+.wcdv-wc-item--deadline-upcoming {
+  position: relative;
+}
+
+.wcdv-wc-item--deadline-open::before,
+.wcdv-wc-item--deadline-soon::before,
+.wcdv-wc-item--deadline-ended::before,
+.wcdv-wc-item--deadline-upcoming::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.wcdv-wc-item--deadline-open::before {
+  background: #2e7d32;
+}
+
+.wcdv-wc-item--deadline-soon::before {
+  background: #f9a825;
+}
+
+.wcdv-wc-item--deadline-ended::before {
+  background: #c62828;
+}
+
+.wcdv-wc-item--deadline-upcoming::before {
+  background: #78909c;
+}
+
+.wcdv-wc-item:last-child {
+  border-bottom: none;
+}
+
+.wcdv-wc-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.wcdv-wc-title-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.wcdv-wc-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+/*
+ * New（.cl-contentsList_new）
+ * 本家 WebClass：角丸バッジではなく、その上の行の太字赤テキスト「New」
+ */
+#wcdv-root span.cl-contentsList_new {
+  display: block;
+  box-sizing: border-box;
+  margin: 0 0 3px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: #c62828;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+#wcdv-root span.cl-contentsList_new::before,
+#wcdv-root span.cl-contentsList_new::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 見出し内：New を上、タイトルリンクを下に積む */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc .cm-contentsList_contentName {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.wcdv-wc-title-line--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.wcdv-wc-title-a {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-title-a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-wc-title-plain {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.wcdv-wc-course-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #666;
+}
+
+.wcdv-wc-course-sub a {
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-course-sub a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-wc-links-col {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.wcdv-wc-side-a {
+  font-size: 11px;
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-side-a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-wc-countdown {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #424242;
+}
+
+.wcdv-wc-item--deadline-open .wcdv-wc-countdown {
+  color: #1b5e20;
+}
+
+.wcdv-wc-item--deadline-soon .wcdv-wc-countdown {
+  color: #e65100;
+}
+
+.wcdv-wc-item--deadline-ended .wcdv-wc-countdown {
+  color: #c62828;
+}
+
+.wcdv-wc-item--deadline-upcoming .wcdv-wc-countdown {
+  color: #546e7a;
+}
+
+.wcdv-wc-type {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #757575;
+}
+
+.wcdv-wc-period {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #757575;
+}
+
+.wcdv-wc-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#wcdv-course-toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #1e3a4f;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+#wcdv-course-toast.wcdv-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>利用可能期間ビューア — 設定</title>
+    <link rel="stylesheet" href="../shared/styles/base.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="wc-page">
+      <header class="wc-header">
+        <p class="wc-kicker">WebClass</p>
+        <h1 class="wc-title">利用可能期間ビューア — 設定</h1>
+        <p class="wc-lead">
+          <strong>ここで許可したドメイン</strong>の WebClass（URL に <code>/webclass/</code> を含むページ）だけで拡張が動作します。初回インストール直後はこのページが開きます。
+        </p>
+      </header>
+
+      <section class="wc-card">
+        <h2 class="wc-card__h">一覧パネルの表示</h2>
+        <div class="wc-row">
+          <div class="wc-row__text">
+            <span class="wc-row__title" id="toggleLabel">コース一覧に利用可能期間パネルを表示する</span>
+            <span class="wc-row__desc">オフにすると、許可済みドメインでも UI は出ません</span>
+          </div>
+          <label class="wc-switch" title="オン / オフ">
+            <input type="checkbox" id="toggleEnabled" checked aria-labelledby="toggleLabel" />
+            <span class="wc-switch__track"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="wc-card">
+        <h2 class="wc-card__h">自動一括取得</h2>
+        <div class="wc-row">
+          <div class="wc-row__text">
+            <span class="wc-row__title" id="autoBulkToggleLabel">一覧を開いたときの自動一括取得</span>
+            <span class="wc-row__desc">オフにしても「一括取得」ボタンからの手動実行は使えます</span>
+          </div>
+          <label class="wc-switch" title="オン / オフ">
+            <input type="checkbox" id="toggleAutoBulk" checked aria-labelledby="autoBulkToggleLabel" />
+            <span class="wc-switch__track"></span>
+          </label>
+        </div>
+        <p class="wc-hint">
+          オンにしたとき、保存データの<strong>最終更新</strong>から次の時間が経過していれば、コース一覧を開いたタイミングでバックグラウンドの一括取得を自動で開始します（1 時間単位で指定）。
+        </p>
+        <div class="wc-interval">
+          <label class="wc-interval__label" for="autoBulkHours">経過時間（時間）</label>
+          <input
+            type="number"
+            id="autoBulkHours"
+            class="wc-input wc-input--narrow"
+            min="1"
+            max="720"
+            step="1"
+            value="6"
+            aria-describedby="autoBulkHoursDesc"
+          />
+        </div>
+        <p class="wc-row__desc" id="autoBulkHoursDesc">1〜720（30 日）の整数。短くすると自動取得が起きやすくなります。</p>
+      </section>
+
+      <section class="wc-card">
+        <h2 class="wc-card__h">許可するサイト（オリジン）</h2>
+        <p class="wc-hint">
+          大学の WebClass を開いたブラウザの<strong>アドレスバー</strong>から、<code>https://</code> からホスト名までをコピーして貼り付けてください（<code>/webclass/</code> 以降は不要です）。
+        </p>
+        <p class="wc-example">例: <code>https://webclass.example.ac.jp</code></p>
+        <div class="wc-add">
+          <input
+            type="text"
+            id="originInput"
+            class="wc-input"
+            placeholder="https://webclass.example.ac.jp"
+            spellcheck="false"
+            autocomplete="off"
+            aria-label="許可するサイトのオリジン"
+          />
+          <button type="button" class="wc-btn wc-btn--primary" id="addOriginBtn">追加</button>
+        </div>
+        <p class="wc-status" id="optionsStatus" role="status"></p>
+        <div class="wc-sitelist" id="siteList"></div>
+      </section>
+
+      <section class="wc-card wc-card--sub">
+        <h2 class="wc-card__h">手順</h2>
+        <ol class="wc-steps">
+          <li>上でオリジンを追加し、ブラウザの許可ダイアログで「許可」します。</li>
+          <li>WebClass のタブを<strong>再読み込み</strong>します。</li>
+          <li>「参加しているコース」付近に一覧パネルが表示されます。一括取得は一覧ページから実行できます。</li>
+        </ol>
+      </section>
+
+      <p class="wc-footnote">
+        ツールバーの拡張アイコンをクリックしてもこの設定を開けます。
+        <a class="wc-footnote__link" href="../../privacy/index.html" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
+      </p>
+    </div>
+    <script src="../shared/constants.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

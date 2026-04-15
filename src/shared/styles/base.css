@@ -1,0 +1,47 @@
+/* WCDV — content / options で共有するデザイントークン */
+:root {
+  --wcdv-font-ui: inherit, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --wcdv-font-mono: ui-monospace, monospace;
+
+  --wcdv-text: #2a3a52;
+  --wcdv-text-body: #333;
+  --wcdv-text-muted: #5a6b7e;
+  --wcdv-text-hint: #455a73;
+  --wcdv-text-title: #1a2740;
+  --wcdv-text-input: #222;
+  --wcdv-text-row-title: #3d4f66;
+  --wcdv-text-dim: #7a8a9c;
+
+  --wcdv-bg-page: #eef2f7;
+  --wcdv-bg-surface: #fff;
+  --wcdv-bg-muted: #f4f7fb;
+  --wcdv-bg-subtle: #f8fafc;
+  --wcdv-bg-filter: #fafbfd;
+  --wcdv-bg-code: #fff;
+
+  --wcdv-border: #cfd8e3;
+  --wcdv-border-soft: #d8e0ea;
+  --wcdv-border-light: #e4eaf2;
+  --wcdv-border-input: #c2cedd;
+  --wcdv-border-divider: #e8edf4;
+  --wcdv-border-header: #d5dde8;
+
+  --wcdv-shadow-sm: 0 1px 2px rgba(15, 35, 55, 0.05);
+  --wcdv-shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+  --wcdv-accent: #4a6fa5;
+  --wcdv-accent-hover: #3f6090;
+  --wcdv-accent-border: #3d5d8c;
+  --wcdv-accent-soft: #5f7eb1;
+  --wcdv-accent-soft-border: #5a7aad;
+  --wcdv-accent-soft-hover: #547099;
+
+  --wcdv-btn-ghost-fg: #334155;
+  --wcdv-btn-ghost-border: #d0dae6;
+
+  --wcdv-focus-ring: 0 0 0 2px rgba(74, 111, 165, 0.2);
+  --wcdv-focus-ring-switch: 0 0 0 2px rgba(74, 111, 165, 0.35);
+
+  --wcdv-scroll-thumb: rgba(90, 110, 140, 0.35);
+  --wcdv-scroll-thumb-hover: rgba(60, 85, 120, 0.45);
+}
