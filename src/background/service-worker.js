@@ -14,6 +14,18 @@ const {
 
 let bulkRunning = false;
 
+/**
+ * 一括取得の待ち時間（ms）。短くすると速いが、WebClass 側の負荷でログアウトしやすくなることがあります。
+ * さらに詰めたい場合はここだけ調整してください。
+ */
+const BULK_MS_AFTER_TAB_COMPLETE = 400;
+const BULK_MS_AFTER_RETURN_TO_LIST = 550;
+const BULK_MS_AFTER_MATERIALS_READY = 450;
+const BULK_MATERIALS_TIMEOUT_MS = 26000;
+const BULK_MATERIALS_POLL_MS = 200;
+const BULK_MATERIALS_RETRY_MS = 220;
+const BULK_MATERIALS_ROWS_STABLE_MS = 800;
+
 function scriptIdFromOrigin(origin) {
   let h = 0;
   for (let i = 0; i < origin.length; i++) {
@@ -311,12 +323,12 @@ async function waitForCourseMaterialsReady(tabId, timeoutMs) {
         },
       });
     } catch {
-      await sleep(400);
+      await sleep(BULK_MATERIALS_RETRY_MS);
       continue;
     }
     const r = results && results.result;
     if (!r) {
-      await sleep(320);
+      await sleep(BULK_MATERIALS_POLL_MS);
       continue;
     }
     if (r.onLogin) {
@@ -325,16 +337,16 @@ async function waitForCourseMaterialsReady(tabId, timeoutMs) {
       throw err;
     }
     if (r.emptyMaterials) {
-      await sleep(400);
+      await sleep(BULK_MATERIALS_RETRY_MS);
       return;
     }
     if (r.n > 0) {
       if (firstRowAt === null) firstRowAt = Date.now();
-      else if (Date.now() - firstRowAt >= 1500) return;
+      else if (Date.now() - firstRowAt >= BULK_MATERIALS_ROWS_STABLE_MS) return;
     } else {
       firstRowAt = null;
     }
-    await sleep(320);
+    await sleep(BULK_MATERIALS_POLL_MS);
   }
 }
 
@@ -667,7 +679,7 @@ async function runBulkInBackground(port, payload) {
     const tab = await chrome.tabs.create({ url: listUrl, active: false });
     tabId = tab.id;
     await waitTabComplete(tabId);
-    await sleep(900);
+    await sleep(BULK_MS_AFTER_TAB_COMPLETE);
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -676,7 +688,7 @@ async function runBulkInBackground(port, payload) {
       if (i > 0) {
         await chrome.tabs.update(tabId, { url: listUrl, active: false });
         await waitTabComplete(tabId);
-        await sleep(1200);
+        await sleep(BULK_MS_AFTER_RETURN_TO_LIST);
       }
 
       await navigateToCourseFromListPageByClick(tabId, targetUrl);
@@ -696,8 +708,8 @@ async function runBulkInBackground(port, payload) {
         return;
       }
 
-      await waitForCourseMaterialsReady(tabId, 32000);
-      await sleep(900);
+      await waitForCourseMaterialsReady(tabId, BULK_MATERIALS_TIMEOUT_MS);
+      await sleep(BULK_MS_AFTER_MATERIALS_READY);
 
       let scrapeResult;
       try {
