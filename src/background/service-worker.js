@@ -15,8 +15,8 @@ const {
 let bulkRunning = false;
 
 /**
- * 一括取得の待ち時間（ms）。短くすると速いが、WebClass 側の負荷でログアウトしやすくなることがあります。
- * さらに詰めたい場合はここだけ調整してください。
+ * 一括取得の待ち時間（ms）。短縮すると処理は速くなる一方、WebClass 側の負荷によりセッションが切れやすくなる場合があります。
+ * 間隔の調整はこれらの定数のみを変更してください。
  */
 const BULK_MS_AFTER_TAB_COMPLETE = 400;
 const BULK_MS_AFTER_RETURN_TO_LIST = 550;
@@ -78,7 +78,12 @@ async function syncContentScriptsFromStorage() {
         {
           id: scriptIdFromOrigin(origin),
           matches: matchesForOrigin(origin),
-          js: ["src/shared/constants.js", "src/content/content.js"],
+          js: [
+            "src/shared/constants.js",
+            "src/content/context.js",
+            "src/content/page-panel.js",
+            "src/content/main-panel.js",
+          ],
           css: ["src/shared/styles/base.css", "src/content/content.css"],
           runAt: "document_end",
           allFrames: false,
@@ -264,7 +269,6 @@ async function navigateToCourseFromListPageByClick(tabId, expectedCourseUrl) {
     );
   }
   const how = injected && injected.result && injected.result.how;
-  console.info("[WCDV bg] コース一覧→コース:", how || "?", expectedCourseUrl);
   return how || "assign";
 }
 

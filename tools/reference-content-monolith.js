@@ -257,7 +257,7 @@
   function syncWcdvToolbarPlacement(root) {
     const rootEl = root && root.id === "wcdv-root" ? root : document.getElementById("wcdv-root");
     if (!rootEl) return;
-    const chrome = rootEl.querySelector(".wcdv-wc-standalone-chrome");
+    const standaloneChrome = rootEl.querySelector(".wcdv-wc-standalone-chrome");
     const bulk = document.getElementById("wcdv-bulk");
     const actions = bulk && bulk.closest(".wcdv-wc-actions");
     const host = document.getElementById("wcdv-panel-menu-actions-host");
@@ -266,7 +266,7 @@
     const h2 = document.getElementById("wcdv-wc-heading");
     const label = h2 && h2.querySelector(".wcdv-wc-head-visual-label");
     const sec = rootEl.querySelector(".wcdv-wc-card");
-    if (!actions || !chrome) return;
+    if (!actions || !standaloneChrome) return;
     const inShell = !!rootEl.closest("#wcdv-course-list-panel-shell");
     if (inShell && host && menuTitle) {
       if (actions.parentElement !== host) host.appendChild(actions);
@@ -276,7 +276,7 @@
       rootEl.classList.add("wcdv-toolbar-top");
       if (sec) sec.setAttribute("aria-labelledby", "wcdv-panel-menu-title");
     } else {
-      if (actions.parentElement !== chrome) chrome.appendChild(actions);
+      if (actions.parentElement !== standaloneChrome) standaloneChrome.appendChild(actions);
       if (badge && label && badge.previousElementSibling !== label) {
         label.insertAdjacentElement("afterend", badge);
       }
@@ -2306,10 +2306,6 @@
       }
       return false;
     }
-    console.info(
-      "[WCDV] 一括取得（バックグラウンド）の URL 順:",
-      entries.map((item, i) => ({ step: i + 1, title: item.title, url: item.url }))
-    );
     return true;
   }
 
@@ -2531,8 +2527,9 @@
   }
 
   if (!isWebclassPathPage()) {
-    /* パスに /webclass/ が無いページでは一覧・教材ページ取得を行わない */
-  } else if (isCourseListPage()) {
+    return;
+  }
+  if (isCourseListPage()) {
     if (!tryEnsureListUiMounted()) {
       const iv = setInterval(() => {
         if (tryEnsureListUiMounted()) clearInterval(iv);

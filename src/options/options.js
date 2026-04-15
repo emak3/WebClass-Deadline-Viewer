@@ -52,7 +52,7 @@
       const p = document.createElement("p");
       p.className = "wc-sitelist__empty";
       p.textContent =
-        "まだサイトがありません。WebClass の URL の https://〜ホスト 部分を追加し、ブラウザで許可してください。";
+        "登録済みのサイトはありません。WebClass のベース URL（スキームとホスト名まで。例: https://lms.example.ac.jp）を追加し、ブラウザの許可ダイアログで承認してください。";
       siteListEl.appendChild(p);
       return;
     }
@@ -113,8 +113,8 @@
       setTimeout(() => {
         try {
           alert(
-            "許可するサイト（ドメイン）がまだ登録されていません。\n\n" +
-              "下の入力欄に、大学の WebClass の URL（https:// からホスト名まで。例: https://lms.example.ac.jp）を入力し、「追加」を押して、表示されるブラウザのダイアログで許可してください。"
+            "許可するサイト（オリジン）が未登録です。\n\n" +
+              "入力欄に大学の WebClass のベース URL（https:// からホスト名まで。例: https://lms.example.ac.jp）を入力し、「追加」を選択したうえで、ブラウザの許可ダイアログで承認してください。"
           );
         } catch {
           /* ignore */

@@ -1,4 +1,4 @@
-/* 拡張全体で共有（service worker / content / options）。importScripts または先読みで読み込む。 */
+/* Service worker / content script / options 間で共有する定数。importScripts または先読みで読み込む。 */
 (function (g) {
   "use strict";
   g.WCDV_SHARED = {
