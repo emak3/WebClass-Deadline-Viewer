@@ -3,13 +3,25 @@
   "name": "WebClass Deadline Viewer",
   "version": "4.7.3",
   "description": "参加しているコースの利用可能期間（提出期限）を一覧表示します。",
+  "icons": {
+    "16": "src/icons/icon48.png",
+    "32": "src/icons/icon48.png",
+    "48": "src/icons/icon48.png",
+    "128": "src/icons/icon128.png"
+  },
   "permissions": ["storage", "tabs", "scripting"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "src/background/service-worker.js"
   },
   "action": {
-    "default_title": "WebClass-Deadline-Viewer — クリックで設定"
+    "default_title": "WebClass-Deadline-Viewer — クリックで設定",
+    "default_icon": {
+      "16": "src/icons/icon48.png",
+      "32": "src/icons/icon48.png",
+      "48": "src/icons/icon48.png",
+      "128": "src/icons/icon128.png"
+    }
   },
   "options_ui": {
     "page": "src/options/options.html",

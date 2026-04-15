@@ -11,6 +11,7 @@
   const addOriginBtn = document.getElementById("addOriginBtn");
   const siteListEl = document.getElementById("siteList");
   const statusEl = document.getElementById("optionsStatus");
+  let emptyOriginsPromptShown = false;
 
   function storageGet(keys, cb) {
     chrome.storage.local.get(keys, cb);
@@ -99,7 +100,34 @@
 
   function loadOrigins() {
     storageGet([STORAGE_ORIGINS], (r) => {
-      renderOrigins(r[STORAGE_ORIGINS] || []);
+      const origins = r[STORAGE_ORIGINS] || [];
+      renderOrigins(origins);
+      if (origins.length > 0) {
+        emptyOriginsPromptShown = false;
+        return;
+      }
+      if (emptyOriginsPromptShown) {
+        return;
+      }
+      emptyOriginsPromptShown = true;
+      setTimeout(() => {
+        try {
+          alert(
+            "許可するサイト（ドメイン）がまだ登録されていません。\n\n" +
+              "下の入力欄に、大学の WebClass の URL（https:// からホスト名まで。例: https://lms.example.ac.jp）を入力し、「追加」を押して、表示されるブラウザのダイアログで許可してください。"
+          );
+        } catch {
+          /* ignore */
+        }
+        if (originInput) {
+          try {
+            originInput.focus();
+            originInput.select();
+          } catch {
+            /* ignore */
+          }
+        }
+      }, 0);
     });
   }
 
