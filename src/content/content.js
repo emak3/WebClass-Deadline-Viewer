@@ -8,6 +8,7 @@
     AUTO_BULK_INTERVAL_HOURS_DEFAULT,
     BULK_SHORT_INTERVAL_WARN_MS,
     PANEL_COLLAPSED_KEY,
+    STORAGE_SUBMITTED_ITEMS,
   } = globalThis.WCDV_SHARED;
 
   let wcdvStorageListenerAttached = false;
@@ -16,6 +17,9 @@
   let wcdvAutoBulkStaleAttempted = false;
   /** 一括取得の runtime ポート（bfcache 時に明示 disconnect） */
   let wcdvBulkPort = null;
+  /** 提出済みチェック後の一覧再描画を遅延させる（連続操作は最後から 1 秒） */
+  let wcdvSubmittedListRefreshTimer = null;
+  const WCDV_SUBMITTED_LIST_REFRESH_MS = 1000;
   const LABEL_TEXT = "利用可能期間";
   const PERIOD_RE =
     /^\s*(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})\s*-\s*(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})\s*$/;
@@ -1153,12 +1157,17 @@
           open && r.hrefDetailColumn ? String(r.hrefDetailColumn).trim() : "";
         const hrefTitle = primary || detailCol;
         const hrefDetail = detailCol || primary;
+        const dedupeHref = normalizeItemHrefForDedupe(String(r.href || "").trim());
         return {
           folderTitle: r.folderTitle,
           titleText: normalizeListItemTitleText(r.titleText),
           href: primary,
           hrefTitle,
           hrefDetail,
+          dedupeHref,
+          startMs: r.startMs,
+          endMs: r.endMs,
+          raw: r.raw,
           category: r.category,
           wcNew: r.wcNew === true,
           visitCountText:
@@ -1230,14 +1239,54 @@
     return !!(c && c.checked);
   }
 
-  function applyListFilters(items) {
+  /** 提出済みフラグの保存キー（dedupePlainItems と同じ安定性） */
+  function itemStorageFingerprint(item) {
+    const courseKey = canonicalCourseStorageKey(item.coursePageUrl || "");
+    const h = item.dedupeHref || normalizeItemHrefForDedupe(String(item.href || "").trim());
+    if (h)
+      return `${courseKey}|h:${h}:${item.startMs}:${item.endMs}`;
+    return `${courseKey}|t:${item.folderTitle || ""}:${item.titleText || ""}:${item.raw || ""}:${item.startMs}:${item.endMs}`;
+  }
+
+  async function loadSubmittedKeySet() {
+    try {
+      const got = await chrome.storage.local.get(STORAGE_SUBMITTED_ITEMS);
+      const bag = got[STORAGE_SUBMITTED_ITEMS];
+      const arr =
+        bag && typeof bag === "object" && Array.isArray(bag[ORIGIN]) ? bag[ORIGIN] : [];
+      return new Set(arr.map((x) => String(x)));
+    } catch {
+      return new Set();
+    }
+  }
+
+  async function saveSubmittedKeySet(set) {
+    const got = await chrome.storage.local.get(STORAGE_SUBMITTED_ITEMS);
+    const prev = got[STORAGE_SUBMITTED_ITEMS];
+    const bag = prev && typeof prev === "object" ? { ...prev } : {};
+    bag[ORIGIN] = [...set];
+    await chrome.storage.local.set({ [STORAGE_SUBMITTED_ITEMS]: bag });
+  }
+
+  function applyListFilters(items, submittedSet) {
     const mode = getListFilterMode();
     const now = Date.now();
     const weekMs = 7 * 86400000;
     let out = items.slice();
+    const sub = submittedSet instanceof Set ? submittedSet : new Set();
+
+    if (mode === "submitted") {
+      out = out.filter((it) => sub.has(itemStorageFingerprint(it)));
+    } else {
+      out = out.filter((it) => !sub.has(itemStorageFingerprint(it)));
+    }
 
     if (isExcludeNoPeriod()) {
       out = out.filter((it) => it.period && String(it.period.raw || "").trim().length > 0);
+    }
+
+    if (mode === "submitted") {
+      return out;
     }
 
     if (mode === "week") {
@@ -1250,6 +1299,67 @@
     }
 
     return out;
+  }
+
+  function scheduleSubmittedListRefresh() {
+    if (wcdvSubmittedListRefreshTimer != null) clearTimeout(wcdvSubmittedListRefreshTimer);
+    wcdvSubmittedListRefreshTimer = setTimeout(() => {
+      wcdvSubmittedListRefreshTimer = null;
+      const r = document.getElementById("wcdv-root");
+      if (r && r.isConnected) void refreshListPanel(r);
+    }, WCDV_SUBMITTED_LIST_REFRESH_MS);
+  }
+
+  function bindSubmittedCheckboxInput(inp, fp) {
+    inp.type = "checkbox";
+    inp.className = "wcdv-wc-submit-cb";
+    inp.addEventListener("change", () => {
+      void (async () => {
+        const set = await loadSubmittedKeySet();
+        if (inp.checked) set.add(fp);
+        else set.delete(fp);
+        await saveSubmittedKeySet(set);
+        scheduleSubmittedListRefresh();
+      })();
+    });
+  }
+
+  /** WebClass スキン: 右列下端（締切まで行と同じ高さ帯・図の青枠付近） */
+  function appendSubmittedWcDetailFooter(detail, item, submittedSet) {
+    const fp = itemStorageFingerprint(item);
+    const foot = document.createElement("div");
+    foot.className = "wcdv-wc-submit-detail-footer";
+    const lab = document.createElement("label");
+    lab.className = "wcdv-wc-submit-cb-label--detail-footer";
+    const inp = document.createElement("input");
+    bindSubmittedCheckboxInput(inp, fp);
+    inp.checked = submittedSet.has(fp);
+    lab.appendChild(inp);
+    const t = document.createElement("span");
+    t.className = "wcdv-wc-submit-cb-text";
+    t.textContent = "提出済み";
+    lab.appendChild(t);
+    foot.appendChild(lab);
+    detail.appendChild(foot);
+  }
+
+  /** プレーン行: 利用可能期間の下（チェック → 提出済みの順） */
+  function appendSubmittedPlainRow(row, item, submittedSet) {
+    const fp = itemStorageFingerprint(item);
+    const submitRow = document.createElement("div");
+    submitRow.className = "wcdv-wc-period wcdv-wc-submit-plain-row";
+    const lab = document.createElement("label");
+    lab.className = "wcdv-wc-submit-cb-label--plain-inline";
+    const inp = document.createElement("input");
+    bindSubmittedCheckboxInput(inp, fp);
+    inp.checked = submittedSet.has(fp);
+    lab.appendChild(inp);
+    const t = document.createElement("span");
+    t.className = "wcdv-wc-submit-cb-text";
+    t.textContent = "提出済み";
+    lab.appendChild(t);
+    submitRow.appendChild(lab);
+    row.appendChild(submitRow);
   }
 
   /** パネル表示中のコース教材トップと item のコースが一致するとき true */
@@ -1722,7 +1832,7 @@
     );
   }
 
-  function renderList(root, allItems) {
+  async function renderList(root, allItems) {
     rememberWebclassCourseListUrl();
     tryAdvancePendingNavFromListPage();
 
@@ -1733,7 +1843,8 @@
 
     if (prog) prog.textContent = "";
 
-    const items = applyListFilters(allItems);
+    const submittedSet = await loadSubmittedKeySet();
+    const items = applyListFilters(allItems, submittedSet);
     if (badge) badge.textContent = `（${items.length}）`;
 
     if (list) {
@@ -1746,10 +1857,24 @@
     if (items.length === 0) {
       const empty = document.createElement("div");
       empty.className = "wcdv-wc-empty";
-      empty.textContent =
-        allItems.length === 0
-          ? "「一括取得」で全コースをまとめて取得するか、各コースを開いてデータを蓄積してください。表示は利用可能期間の終了が早い順です。"
-          : "この表示条件に該当する項目はありません。フィルタを変えてください。";
+      const mode = getListFilterMode();
+      if (mode === "submitted") {
+        if (allItems.length === 0) {
+          empty.textContent =
+            "「一括取得」で全コースをまとめて取得するか、各コースを開いてデータを蓄積してください。表示は利用可能期間の終了が早い順です。";
+        } else if (submittedSet.size > 0) {
+          empty.textContent =
+            "提出済みに登録した項目は、この条件では表示されません（「期間なしを除外」がオンになっていないか確認してください）。";
+        } else {
+          empty.textContent =
+            "各行の「提出済み」にチェックを入れた項目だけがこのタブに表示されます。チェックを外すと、もとのタブの条件に戻ります。";
+        }
+      } else if (allItems.length === 0) {
+        empty.textContent =
+          "「一括取得」で全コースをまとめて取得するか、各コースを開いてデータを蓄積してください。表示は利用可能期間の終了が早い順です。";
+      } else {
+        empty.textContent = "この表示条件に該当する項目はありません。フィルタを変えてください。";
+      }
       list.appendChild(empty);
       return;
     }
@@ -1885,6 +2010,7 @@
         }
 
         detail.appendChild(detailList);
+        appendSubmittedWcDetailFooter(detail, item, submittedSet);
         content.appendChild(detail);
         row.appendChild(content);
         list.appendChild(row);
@@ -1991,16 +2117,21 @@
       periodRow.textContent = `利用可能期間 ${item.period.raw}`;
       row.appendChild(periodRow);
 
+      appendSubmittedPlainRow(row, item, submittedSet);
       list.appendChild(row);
     });
   }
 
   async function refreshListPanel(root) {
     if (!extCtxOk()) return;
+    if (wcdvSubmittedListRefreshTimer != null) {
+      clearTimeout(wcdvSubmittedListRefreshTimer);
+      wcdvSubmittedListRefreshTimer = null;
+    }
     try {
       const items = await flattenStoredItems();
       if (!root || !root.isConnected) return;
-      renderList(root, items);
+      await renderList(root, items);
     } catch {
       /* 拡張の再読み込み・無効化など */
     }
@@ -2222,6 +2353,7 @@
           <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="active" /></span><span class="wcdv-wc-filter-text">締切前すべて</span></label>
           <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="all" /></span><span class="wcdv-wc-filter-text">すべて</span></label>
           <label class="wcdv-wc-filter-label" title="終了した項目のみ表示"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="ended" /></span><span class="wcdv-wc-filter-text">締切後すべて</span></label>
+          <label class="wcdv-wc-filter-label" title="チェックした項目のみ"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="submitted" /></span><span class="wcdv-wc-filter-text">提出済み</span></label>
           <label class="wcdv-wc-filter-check"><span class="wcdv-wc-filter-control"><input type="checkbox" id="wcdv-exclude-noperiod" /></span><span class="wcdv-wc-filter-text">期間なしを除外</span></label>
         </div>
         <div id="wcdv-list" class="wcdv-wc-list"></div>
@@ -2307,10 +2439,13 @@
     if (!wcdvStorageListenerAttached) {
       wcdvStorageListenerAttached = true;
       chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== "local" || !changes[STORAGE_KEY]) return;
+        if (area !== "local") return;
+        if (!changes[STORAGE_KEY] && !changes[STORAGE_SUBMITTED_ITEMS]) return;
         if (!extCtxOk() || !isWebclassPathPage() || !isCourseListPage()) return;
         const r = document.getElementById("wcdv-root");
-        if (r && r.isConnected) void refreshListPanel(r);
+        if (!r || !r.isConnected) return;
+        if (changes[STORAGE_KEY]) void refreshListPanel(r);
+        else if (changes[STORAGE_SUBMITTED_ITEMS]) scheduleSubmittedListRefresh();
       });
     }
 

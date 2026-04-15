@@ -11,6 +11,7 @@
     BULK_META_KEY: "wcdv_bulk_meta_v1",
     PANEL_COLLAPSED_KEY: "wcdv_course_panel_collapsed_v1",
     ORIGINS_MIGRATED_KEY: "wcdv_origins_migrated_v1",
+    STORAGE_SUBMITTED_ITEMS: "wcdv_submitted_items_v1",
     AUTO_BULK_INTERVAL_HOURS_DEFAULT: 6,
     BULK_SHORT_INTERVAL_WARN_MS: 30 * 60 * 1000,
   };

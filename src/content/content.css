@@ -335,7 +335,7 @@
 #wcdv-root.wcdv-wc-skin-wc .cl-contentsList_content {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 16px 20px;
   padding: 12px 14px;
@@ -348,14 +348,19 @@
 }
 
 #wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetail {
+  display: flex;
+  flex-direction: column;
   flex: 0 0 auto;
+  align-self: stretch;
   min-width: 72px;
+  min-height: 0;
   text-align: right;
 }
 
 #wcdv-root.wcdv-wc-skin-wc .cl-contentsList_contentDetailList {
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
   align-items: flex-end;
   gap: 4px;
 }
@@ -921,6 +926,109 @@
 .wcdv-wc-item {
   padding: 10px 12px;
   border-bottom: 1px solid #eceff3;
+}
+
+/* 提出済み（WebClass 右列下端・締切までと同じ行の高さ帯） */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-submit-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-submit-cb-label--detail-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--wcdv-text-muted, #607d8b);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* 文言の行高を 16px コントロールに合わせて縦位置を揃える（Radix Checkbox 系 UI） */
+#wcdv-root .wcdv-wc-submit-cb-text {
+  display: inline-block;
+  line-height: 16px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Radix Checkbox 風: 角丸・青 checked・リング（ネイティブを appearance で置き換え） */
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:hover {
+  border-color: #94a3b8;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:focus {
+  outline: none;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(37, 99, 235, 0.45);
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10' fill='none'%3E%3Cpath d='M1 5.2L4.2 8.4L11 1.4' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 11px 9px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wcdv-root input[type="checkbox"].wcdv-wc-submit-cb {
+    transition: none;
+  }
+}
+
+/* プレーン: 右寄せのまま「□ 提出済み」の順 */
+.wcdv-wc-submit-plain-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.wcdv-wc-submit-cb-label--plain-inline {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
 }
 
 /* 締切状態: 左のみ色付きバー（背景は付けず、端を少し丸める） */
