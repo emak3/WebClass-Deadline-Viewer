@@ -463,6 +463,15 @@ function scrapeCoursePageInTab() {
     return t === "詳細";
   }
 
+  function isVisitCountShortcutAnchor(a) {
+    if (!a) return false;
+    const t = a.textContent.replace(/\s+/g, " ").trim();
+    const raw = (a.getAttribute("href") || "").trim();
+    if (/利用回数/.test(t)) return true;
+    if (/\/history(?:\?|\/|$)/i.test(raw)) return true;
+    return false;
+  }
+
   function pickPrimaryContentLinkFromRow(row) {
     const nameBlock = row.querySelector(".cm-contentsList_contentName");
     if (nameBlock) {
@@ -470,6 +479,7 @@ function scrapeCoursePageInTab() {
       for (let i = 0; i < inName.length; i++) {
         const a = inName[i];
         if (isDetailShortcutAnchor(a)) continue;
+        if (isVisitCountShortcutAnchor(a)) continue;
         if ((a.getAttribute("href") || "").trim()) return a;
       }
     }
@@ -477,12 +487,14 @@ function scrapeCoursePageInTab() {
     for (let i = 0; i < doLinks.length; i++) {
       const a = doLinks[i];
       if (isDetailShortcutAnchor(a)) continue;
+      if (isVisitCountShortcutAnchor(a)) continue;
       if ((a.getAttribute("href") || "").trim()) return a;
     }
     const contentsLinks = row.querySelectorAll('a[href*="/contents/"]');
     for (let i = 0; i < contentsLinks.length; i++) {
       const a = contentsLinks[i];
       if (isDetailShortcutAnchor(a)) continue;
+      if (isVisitCountShortcutAnchor(a)) continue;
       if ((a.getAttribute("href") || "").trim()) return a;
     }
     return null;

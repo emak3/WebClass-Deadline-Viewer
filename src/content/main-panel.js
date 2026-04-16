@@ -16,6 +16,12 @@
 
   const _f = globalThis.WCDV_CONTENT_FNS;
 
+  /** renderList 直後の候補用（検索入力のたびに storage を読み直さない） */
+  let _wcdvLastFlattenedForSearch = null;
+  let _wcdvLastSubmittedForSearch = null;
+  let _wcdvSearchSuggestHi = -1;
+  let _wcdvSearchSuggestHideTimer = null;
+
 window.addEventListener("pagehide", (ev) => {
   if (!ev.persisted) return;
   if (C.wcdvBulkPort) {
@@ -524,6 +530,16 @@ function isDetailShortcutAnchor(a) {
   return t === "詳細";
 }
 
+/** 「利用回数 N 回」等の履歴リンク（課題本体ではない） */
+function isVisitCountShortcutAnchor(a) {
+  if (!a) return false;
+  const t = a.textContent.replace(/\s+/g, " ").trim();
+  const raw = (a.getAttribute("href") || "").trim();
+  if (/利用回数/.test(t)) return true;
+  if (/\/history(?:\?|\/|$)/i.test(raw)) return true;
+  return false;
+}
+
 /**
  * 一覧行から教材本体の a を選ぶ。フォールバックの a[href*="/contents/"] が
  * 右列の「詳細」だけを拾って課題扱いになるのを避ける。
@@ -535,6 +551,7 @@ function pickPrimaryContentLinkFromRow(row) {
     for (let i = 0; i < inName.length; i++) {
       const a = inName[i];
       if (isDetailShortcutAnchor(a)) continue;
+      if (isVisitCountShortcutAnchor(a)) continue;
       if ((a.getAttribute("href") || "").trim()) return a;
     }
   }
@@ -542,12 +559,14 @@ function pickPrimaryContentLinkFromRow(row) {
   for (let i = 0; i < doLinks.length; i++) {
     const a = doLinks[i];
     if (isDetailShortcutAnchor(a)) continue;
+    if (isVisitCountShortcutAnchor(a)) continue;
     if ((a.getAttribute("href") || "").trim()) return a;
   }
   const contentsLinks = row.querySelectorAll('a[href*="/contents/"]');
   for (let i = 0; i < contentsLinks.length; i++) {
     const a = contentsLinks[i];
     if (isDetailShortcutAnchor(a)) continue;
+    if (isVisitCountShortcutAnchor(a)) continue;
     if ((a.getAttribute("href") || "").trim()) return a;
   }
   return null;
@@ -871,6 +890,241 @@ function isExcludeNoPeriod() {
   return !!(c && c.checked);
 }
 
+function getListSearchQuery() {
+  const inp = document.getElementById("wcdv-list-search");
+  return inp ? String(inp.value || "").trim() : "";
+}
+
+function itemSearchHaystack(item) {
+  const p = item && item.period;
+  const parts = [
+    item && item.titleText,
+    item && item.courseTitle,
+    item && item.folderTitle,
+    item && item.category,
+    p && p.raw,
+    item && item.visitCountText,
+  ];
+  return parts.map((x) => String(x || "")).join("\n");
+}
+
+/** 検索用に改行・連続空白を潰した1行（候補確定の「コース名 題名」と順序が違っても当てられる） */
+function itemSearchHaystackFlat(item) {
+  return itemSearchHaystack(item).replace(/\s+/g, " ").trim();
+}
+
+function itemMatchesSearch(item, q) {
+  const needle = String(q || "").trim();
+  if (!needle) return true;
+  const hayLine = itemSearchHaystack(item);
+  if (hayLine.includes(needle)) return true;
+  const hayFlat = itemSearchHaystackFlat(item);
+  const needleFlat = needle.replace(/\s+/g, " ").trim();
+  if (hayFlat.includes(needleFlat)) return true;
+  try {
+    const hf = hayFlat.toLowerCase();
+    const nf = needleFlat.toLowerCase();
+    if (hf.includes(nf)) return true;
+    const tokens = needleFlat.split(/\s+/).filter(Boolean);
+    if (tokens.length < 2) return false;
+    return tokens.every((tok) => hf.includes(tok.toLowerCase()));
+  } catch {
+    return false;
+  }
+}
+
+function applySearchTextFilter(items) {
+  const q = getListSearchQuery();
+  if (!q) return items.slice();
+  return items.filter((it) => itemMatchesSearch(it, q));
+}
+
+function suggestionFillValueForItem(item) {
+  const t = item && String(item.titleText || "").trim();
+  const c = item && String(item.courseTitle || "").trim();
+  if (c && t) return `${c} ${t}`;
+  return t || c || "";
+}
+
+const WCDV_SEARCH_SUGGEST_MAX = 12;
+
+/** 検索欄が空のときの title（入力中は現在の検索語を title に出す） */
+const WCDV_LIST_SEARCH_INPUT_HELP_TITLE =
+  "教材タイトル・コース名・フォルダ・カテゴリ・利用可能期間の表記などに部分一致します";
+
+function syncListSearchInputTitle(inp) {
+  if (!inp) return;
+  const v = String(inp.value || "").trim();
+  inp.title = v ? String(inp.value || "") : WCDV_LIST_SEARCH_INPUT_HELP_TITLE;
+}
+
+function hideSearchSuggestDropdown() {
+  const box = document.getElementById("wcdv-list-search-suggest");
+  const inp = document.getElementById("wcdv-list-search");
+  if (box) {
+    box.hidden = true;
+    box.innerHTML = "";
+  }
+  if (inp) inp.setAttribute("aria-expanded", "false");
+  _wcdvSearchSuggestHi = -1;
+}
+
+function syncSearchClearButtonVisibility() {
+  const clearBtn = document.getElementById("wcdv-list-search-clear");
+  const inp = document.getElementById("wcdv-list-search");
+  if (!clearBtn || !inp) return;
+  clearBtn.hidden = !String(inp.value || "").trim();
+}
+
+function paintSearchSuggestHighlight(box) {
+  if (!box) return;
+  const opts = box.querySelectorAll(".wcdv-wc-search-suggest__opt");
+  opts.forEach((el, i) => {
+    el.classList.toggle("wcdv-wc-search-suggest__opt--hi", i === _wcdvSearchSuggestHi);
+    el.setAttribute("aria-selected", i === _wcdvSearchSuggestHi ? "true" : "false");
+  });
+}
+
+function updateSearchSuggestionsDom(root) {
+  const inp = document.getElementById("wcdv-list-search");
+  const box = document.getElementById("wcdv-list-search-suggest");
+  if (!inp || !box) return;
+  const q = String(inp.value || "").trim();
+  if (!q || !_wcdvLastFlattenedForSearch || !_wcdvLastSubmittedForSearch) {
+    hideSearchSuggestDropdown();
+    return;
+  }
+  const base = applyNonSearchListFilters(_wcdvLastFlattenedForSearch, _wcdvLastSubmittedForSearch);
+  const matches = [];
+  const seen = new Set();
+  for (let i = 0; i < base.length; i++) {
+    const it = base[i];
+    if (!itemMatchesSearch(it, q)) continue;
+    const key = itemStorageFingerprint(it);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    matches.push({ item: it });
+    if (matches.length >= WCDV_SEARCH_SUGGEST_MAX) break;
+  }
+  if (matches.length === 0) {
+    hideSearchSuggestDropdown();
+    return;
+  }
+  box.innerHTML = "";
+  _wcdvSearchSuggestHi = -1;
+  for (let j = 0; j < matches.length; j++) {
+    const m = matches[j];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "wcdv-wc-search-suggest__opt";
+    btn.setAttribute("role", "option");
+    btn.dataset.wcdvFill = suggestionFillValueForItem(m.item);
+    const cLab = String(m.item.courseTitle || "").trim() || "コース";
+    const tLab = String(m.item.titleText || "").trim() || "（無題）";
+    const sep = document.createElement("span");
+    sep.className = "wcdv-wc-search-suggest__sep";
+    sep.textContent = " › ";
+    const courseSpan = document.createElement("span");
+    courseSpan.className = "wcdv-wc-search-suggest__course";
+    courseSpan.textContent = cLab;
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "wcdv-wc-search-suggest__title";
+    titleSpan.textContent = tLab;
+    if (tLab && tLab !== "（無題）") titleSpan.classList.add("wcdv-wc-search-suggest__title--emph");
+    btn.appendChild(courseSpan);
+    btn.appendChild(sep);
+    btn.appendChild(titleSpan);
+    btn.addEventListener("mousedown", (ev) => {
+      ev.preventDefault();
+      inp.value = String(btn.dataset.wcdvFill || "").trim();
+      syncSearchClearButtonVisibility();
+      syncListSearchInputTitle(inp);
+      hideSearchSuggestDropdown();
+      if (root && root.isConnected) void refreshListPanel(root);
+      inp.blur();
+    });
+    box.appendChild(btn);
+  }
+  box.hidden = false;
+  inp.setAttribute("aria-expanded", "true");
+  paintSearchSuggestHighlight(box);
+}
+
+function wireListSearchUi(root) {
+  const inp = document.getElementById("wcdv-list-search");
+  const box = document.getElementById("wcdv-list-search-suggest");
+  const clearBtn = document.getElementById("wcdv-list-search-clear");
+  if (!inp || !box || inp._wcdvSearchWired) return;
+  inp._wcdvSearchWired = true;
+
+  const schedHide = () => {
+    if (_wcdvSearchSuggestHideTimer) clearTimeout(_wcdvSearchSuggestHideTimer);
+    _wcdvSearchSuggestHideTimer = setTimeout(() => {
+      _wcdvSearchSuggestHideTimer = null;
+      const a = document.activeElement;
+      if (a !== inp && !(a && box.contains(a))) hideSearchSuggestDropdown();
+    }, 200);
+  };
+
+  inp.addEventListener("input", () => {
+    syncSearchClearButtonVisibility();
+    syncListSearchInputTitle(inp);
+    void refreshListPanel(root);
+  });
+  syncSearchClearButtonVisibility();
+  syncListSearchInputTitle(inp);
+  if (clearBtn && !clearBtn._wcdvSearchClearWired) {
+    clearBtn._wcdvSearchClearWired = true;
+    clearBtn.addEventListener("mousedown", (ev) => {
+      ev.preventDefault();
+      inp.value = "";
+      syncSearchClearButtonVisibility();
+      syncListSearchInputTitle(inp);
+      hideSearchSuggestDropdown();
+      void refreshListPanel(root);
+      inp.focus();
+    });
+  }
+  inp.addEventListener("focus", () => {
+    if (_wcdvSearchSuggestHideTimer) {
+      clearTimeout(_wcdvSearchSuggestHideTimer);
+      _wcdvSearchSuggestHideTimer = null;
+    }
+    updateSearchSuggestionsDom(root);
+  });
+  inp.addEventListener("blur", schedHide);
+  box.addEventListener("focusout", schedHide);
+
+  inp.addEventListener("keydown", (ev) => {
+    if (box.hidden) return;
+    const opts = box.querySelectorAll(".wcdv-wc-search-suggest__opt");
+    if (opts.length === 0) return;
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      hideSearchSuggestDropdown();
+      return;
+    }
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      _wcdvSearchSuggestHi = Math.min(_wcdvSearchSuggestHi + 1, opts.length - 1);
+      if (_wcdvSearchSuggestHi < 0) _wcdvSearchSuggestHi = 0;
+      paintSearchSuggestHighlight(box);
+      opts[_wcdvSearchSuggestHi].scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      _wcdvSearchSuggestHi = Math.max(_wcdvSearchSuggestHi - 1, -1);
+      paintSearchSuggestHighlight(box);
+      return;
+    }
+    if (ev.key === "Enter" && _wcdvSearchSuggestHi >= 0) {
+      ev.preventDefault();
+      opts[_wcdvSearchSuggestHi].dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+    }
+  });
+}
+
 /** 提出済みフラグの保存キー（dedupePlainItems と同じ安定性） */
 function itemStorageFingerprint(item) {
   const courseKey = canonicalCourseStorageKey(item.coursePageUrl || "");
@@ -900,7 +1154,7 @@ async function saveSubmittedKeySet(set) {
   await chrome.storage.local.set({ [STORAGE_SUBMITTED_ITEMS]: bag });
 }
 
-function applyListFilters(items, submittedSet) {
+function applyNonSearchListFilters(items, submittedSet) {
   const mode = getListFilterMode();
   const now = Date.now();
   const weekMs = 7 * 86400000;
@@ -933,6 +1187,10 @@ function applyListFilters(items, submittedSet) {
   }
 
   return out;
+}
+
+function applyListFilters(items, submittedSet) {
+  return applySearchTextFilter(applyNonSearchListFilters(items, submittedSet));
 }
 
 function scheduleSubmittedListRefresh() {
@@ -1482,7 +1740,10 @@ async function renderList(root, allItems) {
   if (prog) prog.textContent = "";
 
   const submittedSet = await loadSubmittedKeySet();
-  const items = applyListFilters(allItems, submittedSet);
+  _wcdvLastFlattenedForSearch = allItems;
+  _wcdvLastSubmittedForSearch = submittedSet;
+  const baseItems = applyNonSearchListFilters(allItems, submittedSet);
+  const items = applySearchTextFilter(baseItems);
   if (badge) badge.textContent = `（${items.length}）`;
 
   if (list) {
@@ -1500,6 +1761,9 @@ async function renderList(root, allItems) {
       if (allItems.length === 0) {
         empty.textContent =
           "「一括取得」で全コースをまとめて取得するか、各コースを開いてデータを蓄積してください。表示は利用可能期間の終了が早い順です。";
+      } else if (baseItems.length > 0 && getListSearchQuery()) {
+        empty.textContent =
+          "検索に一致する項目はありません。語句を変えるか検索窓を空にしてください。";
       } else if (submittedSet.size > 0) {
         empty.textContent =
           "このタブには、受付中かつ提出済みにチェックした項目だけが表示されます。締切済み・未開始の項目は出ません。「期間なしを除外」がオンで隠れている可能性もあります。";
@@ -1510,10 +1774,14 @@ async function renderList(root, allItems) {
     } else if (allItems.length === 0) {
       empty.textContent =
         "「一括取得」で全コースをまとめて取得するか、各コースを開いてデータを蓄積してください。表示は利用可能期間の終了が早い順です。";
+    } else if (baseItems.length > 0 && getListSearchQuery()) {
+      empty.textContent =
+        "検索に一致する項目はありません。語句を変えるか検索窓を空にしてください。";
     } else {
       empty.textContent = "この表示条件に該当する項目はありません。フィルタを変えてください。";
     }
     list.appendChild(empty);
+    updateSearchSuggestionsDom(root);
     return;
   }
 
@@ -1762,6 +2030,7 @@ async function renderList(root, allItems) {
     }
     list.appendChild(row);
   });
+  updateSearchSuggestionsDom(root);
 }
 
 async function refreshListPanel(root) {
@@ -1978,6 +2247,44 @@ function ensureListUi() {
           <span class="wcdv-wc-head-visual-label">利用可能期間一覧</span>
           <span id="wcdv-badge" class="wcdv-wc-count">（0）</span>
         </h2>
+        <div class="wcdv-wc-search-center">
+          <div class="wcdv-wc-search-wrap">
+            <span class="wcdv-wc-search-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2" />
+                <path d="M20 20 15.2 15.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </span>
+            <input
+              type="search"
+              id="wcdv-list-search"
+              class="wcdv-wc-search-input"
+              placeholder="教材・コース名で検索"
+              maxlength="200"
+              autocomplete="off"
+              spellcheck="false"
+              aria-autocomplete="list"
+              aria-controls="wcdv-list-search-suggest"
+              aria-expanded="false"
+              enterkeyhint="search"
+              aria-label="教材・コース名で検索"
+                title="${WCDV_LIST_SEARCH_INPUT_HELP_TITLE}"
+            />
+            <button
+              type="button"
+              id="wcdv-list-search-clear"
+              class="wcdv-wc-search-clear"
+              title="検索をクリア"
+              aria-label="検索をクリア"
+              hidden
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M6 6 18 18M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+            <div id="wcdv-list-search-suggest" class="wcdv-wc-search-suggest" role="listbox" aria-label="検索候補" hidden></div>
+          </div>
+        </div>
         <div class="wcdv-wc-actions">
           <button type="button" id="wcdv-bulk" class="wcdv-wc-btn-primary">一括取得</button>
           <button type="button" id="wcdv-reload" class="wcdv-wc-btn-sub">再表示</button>
@@ -2022,6 +2329,8 @@ function ensureListUi() {
     });
   const excl = document.getElementById("wcdv-exclude-noperiod");
   if (excl) excl.addEventListener("change", onFilterChange);
+
+  wireListSearchUi(root);
 
   const bulkBtn = document.getElementById("wcdv-bulk");
   if (bulkBtn) {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebClass Deadline Viewer",
-  "version": "4.7.3",
+  "version": "4.7.4",
   "description": "参加しているコースの利用可能期間（提出期限）を一覧表示します。",
   "icons": {
     "16": "src/icons/icon48.png",

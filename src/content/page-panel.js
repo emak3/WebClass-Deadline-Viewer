@@ -136,11 +136,16 @@ function createListPanelShell() {
   menuTitle.title = "クリックで折りたたみ（または「折りたたみ」ボタン）";
   menuTitle.addEventListener("click", () => setCollapsed(true));
 
+  const menuSearchHost = document.createElement("div");
+  menuSearchHost.id = "wcdv-panel-search-host";
+  menuSearchHost.className = "wcdv-panel-menu-search-host";
+
   const menuActionsHost = document.createElement("div");
   menuActionsHost.id = "wcdv-panel-menu-actions-host";
   menuActionsHost.className = "wcdv-panel-menu-actions";
 
   menu.appendChild(menuTitle);
+  menu.appendChild(menuSearchHost);
   menu.appendChild(menuActionsHost);
   expanded.appendChild(menu);
   const filtersSlot = document.createElement("div");
@@ -173,6 +178,17 @@ function createListPanelShell() {
   reopen.addEventListener("click", () => setCollapsed(false));
 
   return shell;
+}
+
+/** 旧シェルに検索用スロットが無いときだけメニューに差し込む（タイトルと操作列のあいだ） */
+function ensurePanelSearchHost(menuEl) {
+  if (document.getElementById("wcdv-panel-search-host")) return;
+  const actionsHost = document.getElementById("wcdv-panel-menu-actions-host");
+  if (!menuEl || !actionsHost || !actionsHost.parentNode) return;
+  const slot = document.createElement("div");
+  slot.id = "wcdv-panel-search-host";
+  slot.className = "wcdv-panel-menu-search-host";
+  menuEl.insertBefore(slot, actionsHost);
 }
 
 /** 旧シェルにフィルタ用スロットが無いときだけ差し込む（#wcdv-root の直前） */
@@ -216,15 +232,17 @@ function wirePanelCollapseButton(root) {
   btn.addEventListener("click", fn);
 }
 
-/** シェル内では上部メニューに操作ボタン列を移し、カード内の見出しと重複させない（actions は root 外に出るため #wcdv-bulk で引く） */
+/** シェル内では上部メニューに操作列と検索を移し、カード内の見出しと重複させない */
 function syncWcdvToolbarPlacement(root) {
   const rootEl = root && root.id === "wcdv-root" ? root : document.getElementById("wcdv-root");
   if (!rootEl) return;
   const standaloneChrome = rootEl.querySelector(".wcdv-wc-standalone-chrome");
   const bulk = document.getElementById("wcdv-bulk");
   const actions = bulk && bulk.closest(".wcdv-wc-actions");
+  const searchCenter = rootEl.querySelector(".wcdv-wc-search-center");
   const host = document.getElementById("wcdv-panel-menu-actions-host");
   const menuTitle = document.getElementById("wcdv-panel-menu-title");
+  const menuEl = menuTitle && menuTitle.closest(".wcdv-panel-menu");
   const badge = document.getElementById("wcdv-badge");
   const h2 = document.getElementById("wcdv-wc-heading");
   const label = h2 && h2.querySelector(".wcdv-wc-head-visual-label");
@@ -232,6 +250,9 @@ function syncWcdvToolbarPlacement(root) {
   if (!actions || !standaloneChrome) return;
   const inShell = !!rootEl.closest("#wcdv-course-list-panel-shell");
   if (inShell && host && menuTitle) {
+    if (menuEl) ensurePanelSearchHost(menuEl);
+    const sh = document.getElementById("wcdv-panel-search-host");
+    if (searchCenter && sh && searchCenter.parentElement !== sh) sh.appendChild(searchCenter);
     if (actions.parentElement !== host) host.appendChild(actions);
     if (badge && badge.previousElementSibling !== menuTitle) {
       menuTitle.insertAdjacentElement("afterend", badge);
@@ -239,7 +260,16 @@ function syncWcdvToolbarPlacement(root) {
     rootEl.classList.add("wcdv-toolbar-top");
     if (sec) sec.setAttribute("aria-labelledby", "wcdv-panel-menu-title");
   } else {
-    if (actions.parentElement !== standaloneChrome) standaloneChrome.appendChild(actions);
+    if (h2 && searchCenter && searchCenter.parentElement !== standaloneChrome) {
+      h2.insertAdjacentElement("afterend", searchCenter);
+    }
+    if (searchCenter && actions && actions.parentElement !== standaloneChrome) {
+      searchCenter.insertAdjacentElement("afterend", actions);
+    } else if (actions && actions.parentElement !== standaloneChrome) {
+      standaloneChrome.appendChild(actions);
+    } else if (h2 && searchCenter && actions && actions.previousElementSibling !== searchCenter) {
+      searchCenter.insertAdjacentElement("afterend", actions);
+    }
     if (badge && label && badge.previousElementSibling !== label) {
       label.insertAdjacentElement("afterend", badge);
     }
