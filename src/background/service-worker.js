@@ -84,7 +84,7 @@ async function syncContentScriptsFromStorage() {
             "src/content/page-panel.js",
             "src/content/main-panel.js",
           ],
-          css: ["src/shared/styles/base.css", "src/content/content.css"],
+          css: ["src/content/content.css"],
           runAt: "document_end",
           allFrames: false,
         },
