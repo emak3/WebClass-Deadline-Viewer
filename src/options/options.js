@@ -12,6 +12,10 @@
   const siteListEl = document.getElementById("siteList");
   const statusEl = document.getElementById("optionsStatus");
   let emptyOriginsPromptShown = false;
+  const REMOVE_SVG =
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M18 6L6 18M6 6l12 12"/></svg>';
 
   function storageGet(keys, cb) {
     chrome.storage.local.get(keys, cb);
@@ -88,8 +92,10 @@
       });
       const rm = document.createElement("button");
       rm.type = "button";
-      rm.className = "wc-btn wc-btn--ghost";
-      rm.textContent = "削除";
+      rm.className = "site-remove";
+      rm.title = "削除";
+      rm.setAttribute("aria-label", origin + " を削除");
+      rm.innerHTML = REMOVE_SVG;
       rm.addEventListener("click", () => {
         removeOrigin(origin);
       });
