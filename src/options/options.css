@@ -1,4 +1,5 @@
 /* Settings layout — aligned with WebClass Link Modifier. */
+body { display: flex; min-height: 100vh; flex-direction: column; }
 .opts-topbar {
   position: sticky; top: 0; z-index: 10; height: 52px;
   display: flex; align-items: center; padding: 0 20px;
@@ -9,7 +10,7 @@
 .opts-brand-icon { border-radius: 7px; flex: none; }
 .opts-brand-name { font-size: 20px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .opts-brand-version { color: var(--label-3); font: 11px var(--font-mono); }
-.opts-main { width: min(680px, 100%); margin: 0 auto; padding: 32px 20px 16px; }
+.opts-main { width: min(680px, 100%); flex: 1; margin: 0 auto; padding: 32px 20px 16px; }
 .opts-info { padding: 14px 16px; margin-bottom: 32px; background: var(--bg-2); border: 1px solid var(--sep); border-radius: var(--r-lg); }
 .opts-info-title { margin-bottom: 6px; color: var(--label-2); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 .opts-info-steps { padding-left: 20px; color: var(--label-2); font-size: 12px; line-height: 1.75; }
@@ -56,8 +57,11 @@ input::placeholder { color: var(--label-4); }
 .site-remove:hover { color: var(--red); background: rgba(255, 69, 58, .15); }
 .site-list__empty, .wc-sitelist__empty { color: var(--label-3); font-size: 12px; line-height: 1.6; }
 .wc-site__warn { color: #ff9f0a; font-size: 11px; }
-.site-footer { display: grid; justify-items: center; gap: 5px; padding: 20px; border-top: 1px solid var(--sep); }
-.site-footer p { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; color: var(--label-3); font-size: 12px; }
+.site-footer { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 20px; border-top: 1px solid var(--sep); }
+.site-footer p { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 7px; color: var(--label-3); font-size: 12px; line-height: 1.5; }
+.site-footer a { color: var(--label-2); text-decoration: none; transition: color var(--t-fast); }
+.site-footer a:hover { color: var(--label-1); }
+.site-footer .sep { color: var(--label-4); user-select: none; }
 @media (max-width: 580px) {
   .opts-main { padding: 24px 14px 12px; }
   .opts-brand-version { display: none; }

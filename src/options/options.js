@@ -50,6 +50,27 @@
     statusEl.textContent = msg || "";
   }
 
+  function setupContactLink() {
+    const link = document.querySelector(".contact-link");
+    if (!link) return;
+    const product = "WebClass Deadline Viewer";
+    const subject = "【Extension Support】" + product;
+    const body = [
+      "拡張機能名：" + product,
+      "ブラウザ（Chrome / Edge）とバージョン：",
+      "",
+      "お問い合わせ内容：",
+      "",
+      "問題が発生した画面と操作内容(再現手順等)：",
+      "",
+      "表示されたエラー内容：",
+      "",
+      "※パスワード、Cookie、課題ファイルなどの機密情報は記載しないでください。"
+    ].join("\n");
+    link.href = "mailto:contact.ext@ouma3.org?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+  }
+
   function renderOrigins(origins) {
     siteListEl.innerHTML = "";
     if (!origins.length) {
@@ -190,6 +211,7 @@
     autoBulkHours.value = String(h);
     syncAutoBulkHoursDisabled();
   });
+  setupContactLink();
   loadOrigins();
 
   toggle.addEventListener("change", () => {
