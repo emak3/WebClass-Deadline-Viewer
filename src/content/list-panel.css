@@ -1,0 +1,735 @@
+/* ---------------------------------------------------------------------------
+   カード: 横並び時は縦 flex でリスト領域にスクロールを集約
+   --------------------------------------------------------------------------- */
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-standalone-chrome,
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-progress,
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-filters {
+  flex-shrink: 0;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-beside-timetable .wcdv-wc-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   カード UI（コンポーネント）
+   --------------------------------------------------------------------------- */
+
+.wcdv-wc-card {
+  border: 1px solid #cfd8e3;
+  border-radius: 3px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* ツールバーがカード内にあるとき、検索候補ドロップダウンが角で切れないようにする */
+#wcdv-root:not(.wcdv-toolbar-top) .wcdv-wc-card {
+  overflow: visible;
+}
+
+.wcdv-wc-standalone-chrome {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 10px;
+  padding: 8px 12px;
+  background: #eef2f7;
+  border-bottom: 1px solid #d5dde8;
+}
+
+.wcdv-wc-standalone-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.45;
+  grid-column: 1;
+  min-width: 0;
+  max-width: min(42vw, 280px);
+}
+
+.wcdv-wc-count {
+  font-weight: 600;
+  color: #444;
+}
+
+.wcdv-wc-progress {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #5c6b78;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.wcdv-wc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 見出し | 中央に検索 | 右に一括取得ほか */
+.wcdv-wc-search-center {
+  grid-column: 2;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.wcdv-wc-search-center .wcdv-wc-search-wrap {
+  width: 100%;
+  max-width: min(380px, 100%);
+}
+
+.wcdv-wc-standalone-chrome .wcdv-wc-actions {
+  grid-column: 3;
+  justify-self: end;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.wcdv-wc-search-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 1px 6px 1px 8px;
+  border: 1px solid #b8c5d4;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.wcdv-wc-search-wrap:focus-within {
+  outline: 2px solid rgba(90, 122, 173, 0.35);
+  outline-offset: 1px;
+  border-color: #5a7aad;
+}
+
+.wcdv-wc-search-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.wcdv-panel-menu-search-host .wcdv-wc-search-wrap {
+  max-width: 100%;
+}
+
+.wcdv-wc-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px 2px 3px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #334155;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.35;
+  box-shadow: none;
+}
+
+.wcdv-wc-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.wcdv-wc-search-input:focus {
+  outline: none;
+}
+
+/* 独自のクリアボタンと二重にならないよう、WebKit の検索欄クリアを隠す */
+.wcdv-wc-search-input::-webkit-search-cancel-button,
+.wcdv-wc-search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.wcdv-wc-search-clear {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+}
+
+.wcdv-wc-search-clear:hover {
+  background: #e8eef5;
+  color: #334155;
+}
+
+.wcdv-wc-search-clear:focus {
+  outline: none;
+}
+
+.wcdv-wc-search-clear:focus-visible {
+  outline: 2px solid rgba(90, 122, 173, 0.55);
+  outline-offset: 1px;
+}
+
+.wcdv-wc-search-suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 70;
+  min-width: 100%;
+  box-sizing: border-box;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  background: #fff;
+  border: 1px solid #c5d0e0;
+  border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+}
+
+.wcdv-wc-search-suggest__opt {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.35;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.wcdv-wc-search-suggest__opt:hover,
+.wcdv-wc-search-suggest__opt--hi {
+  background: #eef2f7;
+}
+
+.wcdv-wc-search-suggest__title--emph {
+  font-weight: 700;
+}
+
+.wcdv-wc-btn-primary {
+  padding: 4px 12px;
+  border: 1px solid #5a7aad;
+  border-radius: 3px;
+  background: #5f7eb1;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wcdv-wc-btn-primary:hover {
+  background: #547099;
+}
+
+.wcdv-wc-btn-sub {
+  padding: 4px 10px;
+  border: 1px solid #b8c5d4;
+  border-radius: 3px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wcdv-wc-btn-sub:hover {
+  background: #f6f8fb;
+}
+
+#wcdv-clear.wcdv-wc-btn-sub {
+  border-color: #d4c4c4;
+  color: #6b3a3a;
+}
+
+.wcdv-wc-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 8px 12px;
+  background: #fafbfc;
+  border-bottom: 1px solid #e4e9ef;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--wcdv-text-body);
+}
+
+.wcdv-wc-filter-label,
+.wcdv-wc-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wcdv-wc-filter-check {
+  margin-left: auto;
+}
+
+/* ネイティブ control のレイアウト枠と文字行を、同じ cross-axis 中央に載せる */
+.wcdv-wc-filter-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+}
+
+.wcdv-wc-filter-control input[type="radio"],
+.wcdv-wc-filter-control input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.wcdv-wc-filter-control input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  background: #fff;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.wcdv-wc-filter-control input[type="radio"]:hover {
+  border-color: #94a3b8;
+}
+
+.wcdv-wc-filter-control input[type="radio"]:checked {
+  border-color: #4a6fa5;
+  background: #4a6fa5;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.wcdv-wc-filter-control input[type="radio"]:focus {
+  outline: none;
+}
+
+.wcdv-wc-filter-control input[type="radio"]:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(74, 111, 165, 0.4);
+}
+
+.wcdv-wc-filter-control input[type="radio"]:checked:focus-visible {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    0 0 0 2px #fff,
+    0 0 0 4px rgba(74, 111, 165, 0.4);
+}
+
+.wcdv-wc-filter-control input[type="checkbox"] {
+  accent-color: #4a6fa5;
+}
+
+.wcdv-wc-filter-text {
+  display: flex;
+  align-items: center;
+  min-height: 16px;
+  line-height: 1.25;
+  font-size: inherit;
+}
+
+.wcdv-wc-list {
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+#wcdv-root.wcdv-embedded.wcdv-body-anchor .wcdv-wc-list {
+  max-height: min(62vh, 520px);
+}
+
+.wcdv-wc-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eceff3;
+}
+
+/* 提出済み（WebClass 右列下端・締切までと同じ行の高さ帯） */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-submit-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-submit-cb-label--detail-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--wcdv-text-muted, #607d8b);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* 文言の行高を 16px コントロールに合わせて縦位置を揃える（Radix Checkbox 系 UI） */
+#wcdv-root .wcdv-wc-submit-cb-text {
+  display: inline-block;
+  line-height: 16px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Radix Checkbox 風: 角丸・青 checked・リング（ネイティブを appearance で置き換え） */
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:hover {
+  border-color: #94a3b8;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:focus {
+  outline: none;
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(37, 99, 235, 0.45);
+}
+
+#wcdv-root input[type="checkbox"].wcdv-wc-submit-cb:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10' fill='none'%3E%3Cpath d='M1 5.2L4.2 8.4L11 1.4' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 11px 9px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wcdv-root input[type="checkbox"].wcdv-wc-submit-cb {
+    transition: none;
+  }
+}
+
+/* プレーン: 右寄せのまま「□ 提出済み」の順 */
+.wcdv-wc-submit-plain-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.wcdv-wc-submit-cb-label--plain-inline {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 締切状態: 左のみ色付きバー（背景は付けず、端を少し丸める） */
+.wcdv-wc-item--deadline-open,
+.wcdv-wc-item--deadline-soon,
+.wcdv-wc-item--deadline-ended,
+.wcdv-wc-item--deadline-upcoming {
+  position: relative;
+}
+
+.wcdv-wc-item--deadline-open::before,
+.wcdv-wc-item--deadline-soon::before,
+.wcdv-wc-item--deadline-ended::before,
+.wcdv-wc-item--deadline-upcoming::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.wcdv-wc-item--deadline-open::before {
+  background: #2e7d32;
+}
+
+.wcdv-wc-item--deadline-soon::before {
+  background: #f9a825;
+}
+
+.wcdv-wc-item--deadline-ended::before {
+  background: #c62828;
+}
+
+.wcdv-wc-item--deadline-upcoming::before {
+  background: #78909c;
+}
+
+.wcdv-wc-item:last-child {
+  border-bottom: none;
+}
+
+.wcdv-wc-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.wcdv-wc-title-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.wcdv-wc-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+/*
+ * New（.cl-contentsList_new）
+ * 本家 WebClass：角丸バッジではなく、その上の行の太字赤テキスト「New」
+ */
+#wcdv-root span.cl-contentsList_new {
+  display: block;
+  box-sizing: border-box;
+  margin: 0 0 3px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: #c62828;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+#wcdv-root span.cl-contentsList_new::before,
+#wcdv-root span.cl-contentsList_new::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 見出し内：New を上、タイトルリンクを下に積む */
+#wcdv-root.wcdv-wc-skin-wc .wcdv-wc-item--wc .cm-contentsList_contentName {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.wcdv-wc-title-line--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.wcdv-wc-title-a {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-title-a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-wc-title-plain {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.wcdv-wc-course-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #666;
+}
+
+.wcdv-wc-course-sub a {
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-course-sub a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-wc-links-col {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.wcdv-wc-side-a {
+  font-size: 11px;
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wcdv-wc-side-a:hover {
+  text-decoration: underline;
+  color: #0a3d82;
+}
+
+.wcdv-resubmission-required {
+  color: #c62828;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.wcdv-wc-countdown {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #424242;
+}
+
+.wcdv-wc-item--deadline-open .wcdv-wc-countdown {
+  color: #1b5e20;
+}
+
+.wcdv-wc-item--deadline-soon .wcdv-wc-countdown {
+  color: #e65100;
+}
+
+.wcdv-wc-item--deadline-ended .wcdv-wc-countdown {
+  color: #c62828;
+}
+
+.wcdv-wc-item--deadline-upcoming .wcdv-wc-countdown {
+  color: #546e7a;
+}
+
+.wcdv-wc-type {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #757575;
+}
+
+.wcdv-wc-period {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #757575;
+}
+
+.wcdv-wc-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#wcdv-course-toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #1e3a4f;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+#wcdv-course-toast.wcdv-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
