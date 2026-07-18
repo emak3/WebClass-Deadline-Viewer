@@ -8,6 +8,8 @@
   g.WCDV_CONTENT = {
     wcdvStorageListenerAttached: false,
     wcdvBulkRunningLocal: false,
+    wcdvBulkRunningForOrigin: null,
+    wcdvNavigationGuardAttached: false,
     wcdvAutoBulkStaleTimer: null,
     wcdvAutoBulkStaleAttempted: false,
     wcdvBulkPort: null,

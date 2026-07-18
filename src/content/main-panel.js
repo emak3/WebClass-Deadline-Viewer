@@ -21,6 +21,167 @@
   let _wcdvLastSubmittedForSearch = null;
   let _wcdvSearchSuggestHi = -1;
   let _wcdvSearchSuggestHideTimer = null;
+  const _wcdvNavigationGuardBypass = new WeakSet();
+  let _wcdvAllowNextUnload = false;
+  let _wcdvAllowNextUnloadTimer = null;
+
+function resolveWebclassUrl(rawHref) {
+  if (!rawHref) return false;
+  try {
+    const u = new URL(rawHref, location.href);
+    if (u.origin !== location.origin) return false;
+    if (!/\/webclass(\/|$)/i.test(u.pathname)) return false;
+    return u;
+  } catch {
+    return false;
+  }
+}
+
+function isDifferentWebclassUrl(rawHref) {
+  const u = resolveWebclassUrl(rawHref);
+  return Boolean(u && u.href !== location.href);
+}
+
+function getClickedWebclassNavigationAnchor(ev) {
+  const target = ev.target;
+  if (!(target instanceof Element)) return null;
+  const anchor = target.closest("a[href], area[href]");
+  if (!anchor || !isDifferentWebclassUrl(anchor.getAttribute("href"))) return null;
+  return anchor;
+}
+
+function confirmWebclassNavigationDuringBulk() {
+  return confirm(
+    "課題の一括取得中です。\n\n" +
+      "取得中に WebClass 内の別ページへ移動すると、WebClass の仕様によりログアウトする可能性があります。取得が完了してから移動してください。\n\n" +
+      "それでも移動しますか？"
+  );
+}
+
+function allowNextUnloadBriefly() {
+  _wcdvAllowNextUnload = true;
+  if (_wcdvAllowNextUnloadTimer != null) clearTimeout(_wcdvAllowNextUnloadTimer);
+  _wcdvAllowNextUnloadTimer = setTimeout(() => {
+    _wcdvAllowNextUnload = false;
+    _wcdvAllowNextUnloadTimer = null;
+  }, 0);
+}
+
+function requestBulkStateForOrigin() {
+  return new Promise((resolve) => {
+    if (!_f.extCtxOk()) {
+      resolve(false);
+      return;
+    }
+    try {
+      chrome.runtime.sendMessage(
+        { type: "wcdv-get-bulk-state", origin: C.ORIGIN },
+        (response) => {
+          _f.flushChromeRuntimeLastError();
+          const running = Boolean(response && response.running);
+          C.wcdvBulkRunningForOrigin = running;
+          resolve(running);
+        }
+      );
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/** 一括取得中の WebClass 内URL変更を遷移前に止め、ログアウトの危険を警告する。 */
+function installWebclassNavigationGuard() {
+  if (C.wcdvNavigationGuardAttached) return;
+  C.wcdvNavigationGuardAttached = true;
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (!msg || msg.type !== "wcdv-bulk-state" || msg.origin !== C.ORIGIN) return;
+    C.wcdvBulkRunningForOrigin = Boolean(msg.running);
+  });
+  void requestBulkStateForOrigin();
+
+  window.addEventListener(
+    "click",
+    (ev) => {
+      const anchor = getClickedWebclassNavigationAnchor(ev);
+      if (!anchor) return;
+      if (_wcdvNavigationGuardBypass.has(anchor)) {
+        _wcdvNavigationGuardBypass.delete(anchor);
+        return;
+      }
+
+      if (C.wcdvBulkRunningForOrigin === false) return;
+      if (C.wcdvBulkRunningForOrigin === true) {
+        if (confirmWebclassNavigationDuringBulk()) {
+          allowNextUnloadBriefly();
+          return;
+        }
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        return;
+      }
+
+      // 初期状態の問い合わせが終わる前だけ、遷移を保留して確認後に再実行する。
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      void requestBulkStateForOrigin().then((running) => {
+        if (running && !confirmWebclassNavigationDuringBulk()) return;
+        if (!anchor.isConnected) return;
+        if (running) allowNextUnloadBriefly();
+        _wcdvNavigationGuardBypass.add(anchor);
+        anchor.click();
+      });
+    },
+    true
+  );
+
+  window.addEventListener(
+    "submit",
+    (ev) => {
+      const form = ev.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (!resolveWebclassUrl(form.getAttribute("action") || location.href)) return;
+      if (_wcdvNavigationGuardBypass.has(form)) {
+        _wcdvNavigationGuardBypass.delete(form);
+        return;
+      }
+
+      if (C.wcdvBulkRunningForOrigin === false) return;
+      if (C.wcdvBulkRunningForOrigin === true) {
+        if (confirmWebclassNavigationDuringBulk()) {
+          allowNextUnloadBriefly();
+          return;
+        }
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        return;
+      }
+
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      const submitter = ev.submitter;
+      void requestBulkStateForOrigin().then((running) => {
+        if (running && !confirmWebclassNavigationDuringBulk()) return;
+        if (!form.isConnected) return;
+        if (running) allowNextUnloadBriefly();
+        _wcdvNavigationGuardBypass.add(form);
+        try {
+          form.requestSubmit(submitter || undefined);
+        } catch {
+          form.submit();
+        }
+      });
+    },
+    true
+  );
+
+  // 戻る・進む、再読み込み、スクリプトによる遷移など、クリック以外のURL変更も止める。
+  window.addEventListener("beforeunload", (ev) => {
+    if (C.wcdvBulkRunningForOrigin !== true || _wcdvAllowNextUnload) return;
+    ev.preventDefault();
+    ev.returnValue = "";
+  });
+}
 
 window.addEventListener("pagehide", (ev) => {
   if (!ev.persisted) return;
@@ -2207,6 +2368,7 @@ async function startBulkBackground(root, courses) {
       listUrl: location.href,
       entries,
     });
+    C.wcdvBulkRunningForOrigin = true;
   } catch {
     C.wcdvBulkRunningLocal = false;
     C.wcdvBulkPort = null;
@@ -2357,8 +2519,7 @@ function ensureListUi() {
         !confirm(
           `【遷移の順】コース名の五十音順（同じ名前なら URL 順）で ${courses.length} コースを処理します。\n` +
             `${orderText}\n\n` +
-            `【実行場所】非表示のバックグラウンドタブで、毎回コース一覧を開き直してからページ上の該当コース <a> を click() します（見つからないときだけ assign）。\n` +
-            `教材ページが読み込まれたら保存します（教材がないコースはすぐに 0 件として保存）。この一覧はそのまま使えます。`
+            `【注意】取得中に WebClass 内の別ページへ移動すると、WebClass の仕様によりログアウトする可能性があります。`
         )
       ) {
         return;
@@ -2480,6 +2641,7 @@ function startListMountWatchdog() {
 if (!_f.isWebclassPathPage()) {
   return;
 }
+installWebclassNavigationGuard();
 if (_f.isCourseListPage()) {
   if (!tryEnsureListUiMounted()) {
     const iv = setInterval(() => {

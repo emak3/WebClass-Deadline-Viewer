@@ -13,6 +13,8 @@ const {
 } = globalThis.WCDV_SHARED;
 
 let bulkRunning = false;
+let bulkOrigin = null;
+let bulkAutomationTabId = null;
 
 /**
  * 一括取得の待ち時間（ms）。短縮すると処理は速くなる一方、WebClass 側の負荷によりセッションが切れやすくなる場合があります。
@@ -677,6 +679,53 @@ function safePortPost(port, msg) {
   }
 }
 
+/** 同じ WebClass サイトを開いているコンテンツスクリプトへ一括取得状態を通知する。 */
+async function broadcastBulkState(origin, running) {
+  if (!origin) return;
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({});
+  } catch {
+    return;
+  }
+  const sends = [];
+  for (const tab of tabs) {
+    if (tab.id == null || !tab.url) continue;
+    if (tab.id === bulkAutomationTabId) continue;
+    let sameOrigin = false;
+    try {
+      sameOrigin = new URL(tab.url).origin === origin;
+    } catch {
+      continue;
+    }
+    if (!sameOrigin) continue;
+    sends.push(
+      chrome.tabs
+        .sendMessage(tab.id, {
+          type: "wcdv-bulk-state",
+          origin,
+          running,
+        })
+        .catch(() => {
+          /* コンテンツスクリプトがないタブは無視 */
+        })
+    );
+  }
+  await Promise.all(sends);
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "wcdv-get-bulk-state") return;
+  sendResponse({
+    running: Boolean(
+      bulkRunning &&
+        bulkOrigin &&
+        msg.origin === bulkOrigin &&
+        (!sender.tab || sender.tab.id !== bulkAutomationTabId)
+    ),
+  });
+});
+
 async function runBulkInBackground(port, payload) {
   const { origin, listUrl, entries } = payload;
   if (!origin || !listUrl || !Array.isArray(entries) || entries.length === 0) {
@@ -694,6 +743,7 @@ async function runBulkInBackground(port, payload) {
   try {
     const tab = await chrome.tabs.create({ url: listUrl, active: false });
     tabId = tab.id;
+    bulkAutomationTabId = tabId;
     await waitTabComplete(tabId);
     await sleep(BULK_MS_AFTER_TAB_COMPLETE);
 
@@ -794,6 +844,7 @@ async function runBulkInBackground(port, payload) {
         /* ignore */
       }
     }
+    if (bulkAutomationTabId === tabId) bulkAutomationTabId = null;
   }
 }
 
@@ -807,11 +858,16 @@ chrome.runtime.onConnect.addListener((port) => {
       return;
     }
     bulkRunning = true;
+    bulkOrigin = msg.origin || null;
     void (async () => {
       try {
+        await broadcastBulkState(bulkOrigin, true);
         await runBulkInBackground(port, msg);
       } finally {
+        const finishedOrigin = bulkOrigin;
         bulkRunning = false;
+        bulkOrigin = null;
+        await broadcastBulkState(finishedOrigin, false);
       }
     })();
   });
