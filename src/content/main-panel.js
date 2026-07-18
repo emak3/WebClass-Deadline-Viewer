@@ -2578,8 +2578,17 @@ function startListMountWatchdog() {
   let raf = null;
   let debounceTimer = null;
   let rehostTimer = null;
+  let lastPath = location.pathname + location.search;
+  const pathChanged = () => {
+    const now = location.pathname + location.search;
+    if (now === lastPath) return false;
+    lastPath = now;
+    if (!_f.isWebclassPathPage() || !_f.isCourseListPage()) _f.unmountWcdvListPanelUi();
+    return true;
+  };
   const tick = () => {
     raf = null;
+    pathChanged();
     if (!_f.isWebclassPathPage()) return;
     if (!_f.isCourseListPage()) {
       _f.unmountWcdvListPanelUi();
@@ -2625,17 +2634,7 @@ function startListMountWatchdog() {
   const obs = new MutationObserver(schedule);
   obs.observe(document.documentElement, { childList: true, subtree: true });
   schedule();
-
-  let lastPath = location.pathname + location.search;
-  const pathTick = () => {
-    const now = location.pathname + location.search;
-    if (now !== lastPath) {
-      lastPath = now;
-      if (!_f.isWebclassPathPage() || !_f.isCourseListPage()) _f.unmountWcdvListPanelUi();
-    }
-  };
-  window.addEventListener("popstate", pathTick);
-  setInterval(pathTick, 700);
+  window.addEventListener("popstate", schedule);
 }
 
 if (!_f.isWebclassPathPage()) {

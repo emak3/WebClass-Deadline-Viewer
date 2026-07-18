@@ -69,31 +69,32 @@ async function syncContentScriptsFromStorage() {
 
   if (!enabled) return;
 
-  for (let i = 0; i < origins.length; i++) {
-    const origin = origins[i];
-    const ok = await new Promise((resolve) => {
-      chrome.permissions.contains({ origins: [`${origin}/*`] }, resolve);
-    });
-    if (!ok) continue;
-    try {
-      await chrome.scripting.registerContentScripts([
-        {
-          id: scriptIdFromOrigin(origin),
-          matches: matchesForOrigin(origin),
-          js: [
-            "src/shared/constants.js",
-            "src/content/context.js",
-            "src/content/page-panel.js",
-            "src/content/main-panel.js",
-          ],
-          css: ["src/content/content.css"],
-          runAt: "document_end",
-          allFrames: false,
-        },
-      ]);
-    } catch (e) {
-      console.warn("[WCDV] registerContentScripts", origin, e);
-    }
+  const permissionResults = await Promise.all(
+    origins.map(async (origin) => ({
+      origin,
+      ok: await chrome.permissions.contains({ origins: [`${origin}/*`] }),
+    }))
+  );
+  const scripts = permissionResults
+    .filter(({ ok }) => ok)
+    .map(({ origin }) => ({
+      id: scriptIdFromOrigin(origin),
+      matches: matchesForOrigin(origin),
+      js: [
+        "src/shared/constants.js",
+        "src/content/context.js",
+        "src/content/page-panel.js",
+        "src/content/main-panel.js",
+      ],
+      css: ["src/content/content.css"],
+      runAt: "document_end",
+      allFrames: false,
+    }));
+  if (!scripts.length) return;
+  try {
+    await chrome.scripting.registerContentScripts(scripts);
+  } catch (e) {
+    console.warn("[WCDV] registerContentScripts", e);
   }
 }
 
