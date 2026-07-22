@@ -665,6 +665,7 @@
   font-weight: 700;
   line-height: 1.35;
   text-align: right;
+  white-space: pre-line;
 }
 
 .wcdv-wc-countdown {

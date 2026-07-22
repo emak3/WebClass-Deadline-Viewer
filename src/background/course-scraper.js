@@ -12,6 +12,17 @@ function scrapeCoursePageInTab() {
     return { startMs: start.getTime(), endMs: end.getTime(), raw: text.trim() };
   }
 
+  /** WebClass が再提出対象の行に表示する個別の締め切りを解析する。 */
+  function parseResubmissionDeadline(text) {
+    const m = String(text || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .match(/締め切り\s*[:：]\s*(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const deadline = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0, 0);
+    return isNaN(deadline.getTime()) ? null : deadline.getTime();
+  }
+
   function resolveHref(href, baseUrl) {
     if (!href) return "";
     try {
@@ -72,6 +83,8 @@ function scrapeCoursePageInTab() {
           (it.resubmissionText && String(it.resubmissionText).trim()) ||
           (prev.resubmissionText && String(prev.resubmissionText).trim()) ||
           "",
+        resubmissionDeadlineMs:
+          Number(it.resubmissionDeadlineMs) || Number(prev.resubmissionDeadlineMs) || null,
         hrefDetailColumn:
           (it.hrefDetailColumn && String(it.hrefDetailColumn).trim()) ||
           (prev.hrefDetailColumn && String(prev.hrefDetailColumn).trim()) ||
@@ -209,13 +222,22 @@ function scrapeCoursePageInTab() {
     return { visitCountText: "", historyHref: "" };
   }
 
-  function extractResubmissionText(row) {
+  function extractResubmission(row) {
     const labels = row.querySelectorAll(".cm-contentsList_contentDetailListItemLabel");
     for (let i = 0; i < labels.length; i++) {
-      const text = labels[i].textContent.replace(/\s+/g, " ").trim();
-      if (/再提出が必要/.test(text)) return text;
+      const labelText = labels[i].textContent.replace(/\s+/g, " ").trim();
+      if (!/再提出が必要/.test(labelText)) continue;
+      const dataEl = labels[i].nextElementSibling;
+      const deadlineText =
+        dataEl && dataEl.classList.contains("cm-contentsList_contentDetailListItemData")
+          ? dataEl.textContent.replace(/\s+/g, " ").trim()
+          : "";
+      return {
+        text: [labelText, deadlineText].filter(Boolean).join("\n"),
+        deadlineMs: parseResubmissionDeadline(deadlineText),
+      };
     }
-    return "";
+    return { text: "", deadlineMs: null };
   }
 
   function extractPlainItems(baseUrl) {
@@ -260,7 +282,12 @@ function scrapeCoursePageInTab() {
       const category = catEl ? catEl.textContent.trim() : "";
 
       const { visitCountText, historyHref } = extractVisitCountFromListRow(row, baseUrl);
-      const resubmissionText = extractResubmissionText(row);
+      const resubmission = extractResubmission(row);
+      const effectiveResubmissionDeadlineMs =
+        resubmission.deadlineMs && resubmission.deadlineMs > parsed.endMs
+          ? resubmission.deadlineMs
+          : null;
+      const effectiveEndMs = effectiveResubmissionDeadlineMs || parsed.endMs;
 
       out.push({
         folderTitle,
@@ -271,9 +298,10 @@ function scrapeCoursePageInTab() {
         wcNew: rowHasWcNewBadge(row),
         visitCountText,
         historyHref,
-        resubmissionText,
+        resubmissionText: resubmission.text,
+        resubmissionDeadlineMs: effectiveResubmissionDeadlineMs,
         startMs: parsed.startMs,
-        endMs: parsed.endMs,
+        endMs: effectiveEndMs,
         raw: parsed.raw,
       });
     });
@@ -286,4 +314,3 @@ function scrapeCoursePageInTab() {
   const items = extractPlainItems(coursePageUrl);
   return { coursePageUrl, courseTitle, items };
 }
-

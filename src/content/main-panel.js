@@ -310,8 +310,11 @@ function normalizeForDisplay(rows) {
           open && r.visitCountText ? String(r.visitCountText).trim() : "",
         historyHref: open && r.historyHref ? String(r.historyHref).trim() : "",
         resubmissionText: r.resubmissionText
-          ? String(r.resubmissionText).trim()
+          ? String(r.resubmissionText)
+              .trim()
+              .replace(/\s+(?=締め切り\s*[:：])/, "\n")
           : "",
+        resubmissionDeadlineMs: Number(r.resubmissionDeadlineMs) || null,
         courseTitle: r.courseTitle,
         coursePageUrl: r.coursePageUrl,
         courseUpdatedAt: r.courseUpdatedAt || 0,
@@ -342,9 +345,13 @@ async function flattenStoredItems() {
   return normalizeForDisplay(flat);
 }
 
-function formatCountdownToEnd(endMs) {
+function formatCountdownToEnd(endMs, isResubmissionDeadline = false) {
   const now = Date.now();
-  if (now >= endMs) return "締切（利用可能期間の終了）を過ぎています";
+  if (now >= endMs) {
+    return isResubmissionDeadline
+      ? "再提出期限を過ぎています"
+      : "締切（利用可能期間の終了）を過ぎています";
+  }
   const diff = endMs - now;
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
@@ -646,10 +653,13 @@ function appendSubmittedPlainRow(row, item, submittedSet) {
       cdItem.className = "cm-contentsList_contentDetailListItem";
       const cdLab = document.createElement("div");
       cdLab.className = "cm-contentsList_contentDetailListItemLabel";
-      cdLab.textContent = "締切まで";
+      cdLab.textContent = item.resubmissionDeadlineMs ? "再提出期限まで" : "締切まで";
       const cdData = document.createElement("div");
       cdData.className = "cm-contentsList_contentDetailListItemData wcdv-wc-countdown";
-      cdData.textContent = formatCountdownToEnd(item.period.end.getTime());
+      cdData.textContent = formatCountdownToEnd(
+        item.period.end.getTime(),
+        Boolean(item.resubmissionDeadlineMs)
+      );
       cdItem.appendChild(cdLab);
       cdItem.appendChild(cdData);
       info.appendChild(cdItem);
@@ -804,7 +814,10 @@ function appendSubmittedPlainRow(row, item, submittedSet) {
 
     const cd = document.createElement("div");
     cd.className = "wcdv-wc-countdown";
-    cd.textContent = formatCountdownToEnd(item.period.end.getTime());
+    cd.textContent = formatCountdownToEnd(
+      item.period.end.getTime(),
+      Boolean(item.resubmissionDeadlineMs)
+    );
     row.appendChild(cd);
 
     const typeRow = document.createElement("div");
