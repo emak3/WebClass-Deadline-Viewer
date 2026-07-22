@@ -28,6 +28,12 @@
 - `scripting` — 許可済みのWebClassページへ表示機能を登録するため
 - 任意のサイトアクセス — ユーザーが許可したWebClassサイトでのみ動作するため
 
+## ライセンス
+
+改変・再配布・公開・商用利用が可能です。ただし、名称、文言、UIまたは外観を実質的に引き継いだ派生版を公開する場合は、原作者と公式ソースへのクレジットが必要です。クレジットなしでの公開を希望する場合はお問い合わせください。
+
+詳しい条件は [LICENSE](LICENSE) を確認してください。
+
 ## 関連リンク
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/hepbhmpfaidklleailhbemkeghpjgden)
