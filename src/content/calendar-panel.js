@@ -300,7 +300,7 @@
     C.wcdvCalendarAnchorMs = Date.now();
     const doc = popup.document;
     doc.open();
-    doc.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WebClass 締切カレンダー</title><style>${POPUP_STYLES}</style></head><body><main class="wcdv-popup-shell"><header class="wcdv-popup-head"><h1 class="wcdv-popup-title">締切カレンダー</h1><span id="wcdv-badge">（0）</span></header><div id="wcdv-root"><div id="wcdv-list" class="wcdv-wc-list"></div></div></main></body></html>`);
+    doc.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WebClass 課題予定</title><style>${POPUP_STYLES}</style></head><body><main class="wcdv-popup-shell"><header class="wcdv-popup-head"><h1 class="wcdv-popup-title">課題予定</h1><span id="wcdv-badge">（0）</span></header><div id="wcdv-root"><div id="wcdv-list" class="wcdv-wc-list"></div></div></main></body></html>`);
     doc.close();
     const root = doc.getElementById("wcdv-root");
     popup.focus();
