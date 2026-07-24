@@ -11,6 +11,8 @@
     BULK_SHORT_INTERVAL_WARN_MS,
     PANEL_COLLAPSED_KEY,
     STORAGE_SUBMITTED_ITEMS,
+    STORAGE_COURSE_SETTINGS,
+    STORAGE_EXCLUDE_NO_PERIOD_DEFAULT,
   } = globalThis.WCDV_SHARED;
   const C = globalThis.WCDV_CONTENT;
 
@@ -54,6 +56,7 @@
     updateSearchSuggestionsDom,
     wireListSearchUi,
   } = globalThis.WCDV_SEARCH_PANEL;
+  const calendarPanel = globalThis.WCDV_CALENDAR_PANEL;
 
   configureSearchPanel({
     applyNonSearchListFilters,
@@ -300,6 +303,7 @@ function normalizeForDisplay(rows) {
         href: primary,
         hrefTitle,
         hrefDetail,
+        calendarHref: resolveHref(String(r.href || r.hrefDetailColumn || "").trim(), r.coursePageUrl),
         dedupeHref,
         startMs: r.startMs,
         endMs: r.endMs,
@@ -390,6 +394,10 @@ function itemStorageFingerprint(item) {
     return `${courseKey}|h:${h}:${item.startMs}:${item.endMs}`;
   return `${courseKey}|t:${item.folderTitle || ""}:${item.titleText || ""}:${item.raw || ""}:${item.startMs}:${item.endMs}`;
 }
+
+calendarPanel.configure({
+  bindItemLink: bindWcdvItemLinkNativeNavigate,
+});
 
 async function loadSubmittedKeySet() {
   try {
@@ -534,6 +542,7 @@ function appendSubmittedPlainRow(row, item, submittedSet) {
   if (badge) badge.textContent = `（${items.length}）`;
 
   if (list) {
+    list.classList.remove("wcdv-calendar-host");
     if (wcSkin) list.classList.add("list-group");
     else list.classList.remove("list-group");
   }
@@ -850,11 +859,39 @@ async function refreshListPanel(root) {
     C.wcdvSubmittedListRefreshTimer = null;
   }
   try {
-    const items = await flattenStoredItems();
+    const storedItems = await flattenStoredItems();
+    const items = await applyCourseDisplaySettings(storedItems);
     if (!root || !root.isConnected) return;
+    C.wcdvLatestDisplayItems = items;
     await renderList(root, items);
   } catch {
     /* 拡張の再読み込み・無効化など */
+  }
+}
+
+async function applyCourseDisplaySettings(items) {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_COURSE_SETTINGS);
+    const all = result[STORAGE_COURSE_SETTINGS];
+    const site = all && typeof all === "object" && all[C.ORIGIN] && typeof all[C.ORIGIN] === "object"
+      ? all[C.ORIGIN]
+      : {};
+    return items.flatMap((item) => {
+      const key = canonicalCourseStorageKey(item.coursePageUrl || "");
+      const setting = site[key];
+      if (setting && setting.hidden === true) return [];
+      return [{
+        ...item,
+        courseTitle: setting && String(setting.name || "").trim()
+          ? String(setting.name).trim()
+          : item.courseTitle,
+        calendarCourseColor: setting && /^#[0-9a-f]{6}$/i.test(setting.color || "")
+          ? setting.color
+          : "",
+      }];
+    });
+  } catch {
+    return items;
   }
 }
 
@@ -1104,13 +1141,20 @@ function ensureListUi() {
         </div>
       </div>
       <p id="wcdv-progress" class="wcdv-wc-progress"></p>
-      <div class="wcdv-wc-filters" role="radiogroup" aria-label="表示の絞り込み">
-        <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="week" checked /></span><span class="wcdv-wc-filter-text">7日以内に締切</span></label>
-        <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="active" /></span><span class="wcdv-wc-filter-text">締切前すべて</span></label>
-        <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="all" /></span><span class="wcdv-wc-filter-text">すべて</span></label>
-        <label class="wcdv-wc-filter-label" title="終了した項目のみ表示"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="ended" /></span><span class="wcdv-wc-filter-text">締切後すべて</span></label>
-        <label class="wcdv-wc-filter-label" title="受付中の項目のうち、提出済みにチェックしたもののみ"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="submitted" /></span><span class="wcdv-wc-filter-text">提出済み</span></label>
-        <label class="wcdv-wc-filter-check"><span class="wcdv-wc-filter-control"><input type="checkbox" id="wcdv-exclude-noperiod" /></span><span class="wcdv-wc-filter-text">期間なしを除外</span></label>
+      <div class="wcdv-wc-filters" role="group" aria-label="表示の絞り込み">
+        <div class="wcdv-filter-set wcdv-filter-set--list" role="radiogroup" aria-label="一覧の絞り込み">
+          <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="week" checked /></span><span class="wcdv-wc-filter-text">7日以内に締切</span></label>
+          <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="active" /></span><span class="wcdv-wc-filter-text">締切前すべて</span></label>
+          <label class="wcdv-wc-filter-label"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="all" /></span><span class="wcdv-wc-filter-text">すべて</span></label>
+          <label class="wcdv-wc-filter-label" title="終了した項目のみ表示"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="ended" /></span><span class="wcdv-wc-filter-text">締切後すべて</span></label>
+          <label class="wcdv-wc-filter-label" title="受付中の項目のうち、提出済みにチェックしたもののみ"><span class="wcdv-wc-filter-control"><input type="radio" name="wcdv-filter" value="submitted" /></span><span class="wcdv-wc-filter-text">提出済み</span></label>
+        </div>
+        <div class="wcdv-filter-tail">
+          <button type="button" id="wcdv-view-toggle" class="wcdv-view-toggle" aria-label="カレンダーを開く" title="カレンダーを開く">
+            <svg class="wcdv-view-icon wcdv-view-icon--calendar" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          </button>
+          <label class="wcdv-wc-filter-check"><span class="wcdv-wc-filter-control"><input type="checkbox" id="wcdv-exclude-noperiod" /></span><span class="wcdv-wc-filter-text">期間なしを除外</span></label>
+        </div>
       </div>
       <div id="wcdv-list" class="wcdv-wc-list"></div>
     </section>
@@ -1140,6 +1184,21 @@ function ensureListUi() {
     });
   const excl = document.getElementById("wcdv-exclude-noperiod");
   if (excl) excl.addEventListener("change", onFilterChange);
+  if (excl) {
+    chrome.storage.local.get(STORAGE_EXCLUDE_NO_PERIOD_DEFAULT, (result) => {
+      excl.checked = result[STORAGE_EXCLUDE_NO_PERIOD_DEFAULT] !== false;
+      void refreshListPanel(root);
+    });
+  }
+  const viewToggle = document.getElementById("wcdv-view-toggle");
+  if (viewToggle) {
+    viewToggle.addEventListener("click", () => {
+      const opened = calendarPanel.openMonthWindow(C.wcdvLatestDisplayItems || [], {
+        excludeNoPeriod: Boolean(excl && excl.checked),
+      });
+      if (!opened) alert("カレンダーを開けませんでした。ポップアップを許可して、もう一度お試しください。");
+    });
+  }
 
   wireListSearchUi(root);
 
@@ -1197,11 +1256,15 @@ function ensureListUi() {
     C.wcdvStorageListenerAttached = true;
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "local") return;
-      if (!changes[STORAGE_KEY] && !changes[STORAGE_SUBMITTED_ITEMS]) return;
+      if (!changes[STORAGE_KEY] && !changes[STORAGE_SUBMITTED_ITEMS] && !changes[STORAGE_COURSE_SETTINGS] && !changes[STORAGE_EXCLUDE_NO_PERIOD_DEFAULT]) return;
       if (!_f.extCtxOk() || !_f.isWebclassPathPage() || !_f.isCourseListPage()) return;
       const r = document.getElementById("wcdv-root");
       if (!r || !r.isConnected) return;
-      if (changes[STORAGE_KEY]) void refreshListPanel(r);
+      if (changes[STORAGE_EXCLUDE_NO_PERIOD_DEFAULT]) {
+        const checkbox = document.getElementById("wcdv-exclude-noperiod");
+        if (checkbox) checkbox.checked = changes[STORAGE_EXCLUDE_NO_PERIOD_DEFAULT].newValue !== false;
+      }
+      if (changes[STORAGE_KEY] || changes[STORAGE_COURSE_SETTINGS] || changes[STORAGE_EXCLUDE_NO_PERIOD_DEFAULT]) void refreshListPanel(r);
       else if (changes[STORAGE_SUBMITTED_ITEMS]) scheduleSubmittedListRefresh();
     });
   }

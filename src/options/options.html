@@ -44,6 +44,65 @@
         </div>
       </section>
 
+      <section class="opts-section" aria-labelledby="calendar-title">
+        <div class="opts-section-head"><h2 id="calendar-title">カレンダー表示</h2></div>
+        <div class="sg-card">
+          <button type="button" class="sg-head section-collapse-btn" id="courseSettingsToggle" aria-expanded="false" aria-controls="courseSettingsPanel" aria-label="教科名・色・表示を開く" title="教科設定を展開する">
+            <span class="sg-info section-collapse-btn__info">
+              <span class="sg-title">教科名・色・表示</span>
+              <span class="sg-desc">教科ごとの表示名と色、カレンダーに表示するかを変更できます</span>
+            </span>
+            <span class="section-collapse-btn__chevron" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none"><path d="m4.5 6.25 3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          </button>
+          <div class="sg-row calendar-default-row">
+            <div class="sg-info">
+              <p class="sg-title" id="defaultExcludeNoPeriodLabel">期間なしを既定で除外する</p>
+              <p class="sg-desc">一覧やカレンダーを開いたとき、最初から「期間なしを除外」をオンにします</p>
+            </div>
+            <label class="switch" title="オン / オフ">
+              <input type="checkbox" id="defaultExcludeNoPeriod" checked aria-labelledby="defaultExcludeNoPeriodLabel" />
+              <span class="switch-track"></span>
+            </label>
+          </div>
+          <div class="sg-row calendar-week-row">
+            <div class="sg-info">
+              <label class="sg-title" for="weekStartDay">週の開始曜日</label>
+              <p class="sg-desc">月間カレンダーの左端に表示する曜日を選びます</p>
+            </div>
+            <select id="weekStartDay" aria-label="週の開始曜日">
+              <option value="0">日曜日</option>
+              <option value="1">月曜日</option>
+              <option value="2">火曜日</option>
+              <option value="3">水曜日</option>
+              <option value="4">木曜日</option>
+              <option value="5">金曜日</option>
+              <option value="6">土曜日</option>
+            </select>
+          </div>
+          <div id="courseSettingsPanel" hidden>
+            <div class="sg-body course-settings" id="courseSettings">
+              <p class="calendar-settings__empty">取得済みの教科を読み込んでいます…</p>
+            </div>
+            <div class="sg-head calendar-subhead">
+              <div class="sg-info">
+                <p class="sg-title">設定のエクスポート・インポート</p>
+                <p class="sg-desc">下のテキストをコピーして、別のブラウザへ設定を移せます</p>
+              </div>
+            </div>
+            <div class="sg-body settings-transfer">
+              <textarea id="calendarSettingsText" rows="7" spellcheck="false" aria-label="カレンダー設定テキスト" placeholder="エクスポートすると設定テキストが表示されます"></textarea>
+              <div class="settings-transfer__actions">
+                <button type="button" class="btn btn-secondary" id="exportCalendarSettings">エクスポート</button>
+                <button type="button" class="btn btn-primary" id="importCalendarSettings">インポート</button>
+              </div>
+              <p class="settings-transfer__status" id="calendarSettingsStatus" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="opts-section" aria-labelledby="bulk-title">
         <div class="opts-section-head"><h2 id="bulk-title">自動一括取得</h2></div>
         <div class="sg-card">

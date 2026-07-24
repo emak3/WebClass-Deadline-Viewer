@@ -12,6 +12,9 @@
     PANEL_COLLAPSED_KEY: "wcdv_course_panel_collapsed_v1",
     ORIGINS_MIGRATED_KEY: "wcdv_origins_migrated_v1",
     STORAGE_SUBMITTED_ITEMS: "wcdv_submitted_items_v1",
+    STORAGE_COURSE_SETTINGS: "wcdv_calendar_course_settings_v1",
+    STORAGE_EXCLUDE_NO_PERIOD_DEFAULT: "wcdv_exclude_no_period_default_v1",
+    STORAGE_WEEK_START_DAY: "wcdv_calendar_week_start_day_v1",
     AUTO_BULK_INTERVAL_HOURS_DEFAULT: 6,
     BULK_SHORT_INTERVAL_WARN_MS: 30 * 60 * 1000,
   };

@@ -297,17 +297,67 @@
   color: var(--wcdv-text-body);
 }
 
+.wcdv-filter-set,
+.wcdv-filter-tail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.wcdv-filter-set[hidden] {
+  display: none !important;
+}
+
+.wcdv-filter-tail {
+  margin-left: auto;
+  flex-wrap: nowrap;
+  gap: 9px;
+}
+
 .wcdv-wc-filter-label,
 .wcdv-wc-filter-check {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: 16px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .wcdv-wc-filter-check {
-  margin-left: auto;
+  margin-left: 0;
+}
+
+.wcdv-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #49627e;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wcdv-view-toggle:hover,
+.wcdv-view-toggle[aria-pressed="true"] {
+  background: transparent;
+  color: #294d78;
+}
+
+.wcdv-view-toggle:focus-visible {
+  outline: 2px solid rgba(74, 111, 165, 0.45);
+  outline-offset: 1px;
+}
+
+.wcdv-view-icon[hidden] {
+  display: none;
 }
 
 /* ネイティブ control のレイアウト枠と文字行を、同じ cross-axis 中央に載せる */
@@ -330,6 +380,8 @@
 }
 
 .wcdv-wc-filter-control input[type="radio"] {
+  position: relative;
+  top: 3px;
   appearance: none;
   -webkit-appearance: none;
   border: 1.5px solid #cbd5e1;
@@ -367,15 +419,19 @@
 }
 
 .wcdv-wc-filter-control input[type="checkbox"] {
+  position: relative;
+  top: 3px;
   accent-color: #4a6fa5;
 }
 
 .wcdv-wc-filter-text {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  height: 16px;
   min-height: 16px;
-  line-height: 1.25;
+  line-height: 16px;
   font-size: inherit;
+  transform: translateY(3px);
 }
 
 .wcdv-wc-list {
@@ -384,6 +440,217 @@
   background: #fff;
   overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+/* ---------------------------------------------------------------------------
+   カレンダー表示
+   --------------------------------------------------------------------------- */
+
+.wcdv-wc-list.wcdv-calendar-host {
+  min-width: 0;
+  overflow-x: auto;
+  background: #fff;
+}
+
+.wcdv-calendar-toolbar {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid #dce3eb;
+  background: #fff;
+}
+
+.wcdv-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wcdv-calendar-nav-btn,
+.wcdv-calendar-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 27px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid #c5d0dc;
+  border-radius: 4px;
+  background: #fff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wcdv-calendar-nav-btn {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.wcdv-calendar-nav-btn:hover,
+.wcdv-calendar-today:hover {
+  background: #f1f5f9;
+}
+
+.wcdv-calendar-range-label {
+  color: #25364b;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.wcdv-calendar-grid {
+  min-width: 700px;
+  border-left: 1px solid #e1e7ee;
+}
+
+.wcdv-calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(96px, 1fr));
+  grid-template-rows: 28px;
+  grid-auto-rows: minmax(30px, auto);
+  position: relative;
+  min-height: 142px;
+  border-bottom: 1px solid #e1e7ee;
+}
+
+.wcdv-calendar-day {
+  z-index: 0;
+  min-width: 0;
+  min-height: 100%;
+  padding: 0;
+  border-right: 1px solid #e1e7ee;
+  background: #fff;
+}
+
+.wcdv-calendar-grid--month .wcdv-calendar-week {
+  min-height: 116px;
+}
+
+.wcdv-calendar-day--outside {
+  background: #f7f9fb;
+}
+
+.wcdv-calendar-day--today {
+  position: relative;
+  z-index: 1;
+  background: #fff5f5;
+  box-shadow: inset 0 0 0 2px #fff5f5;
+}
+
+.wcdv-calendar-day__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 5px 6px 4px;
+  border-bottom: 1px solid #edf1f5;
+  background: inherit;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.wcdv-calendar-day--today .wcdv-calendar-day__head {
+  color: #b4232b;
+  background: #ffe8ea;
+}
+
+.wcdv-calendar-event {
+  z-index: 2;
+  align-self: start;
+  display: block;
+  min-width: 0;
+  margin: 2px 3px;
+  padding: 4px 5px 4px 7px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--wcdv-event-color) 38%, white);
+  border-left: 3px solid var(--wcdv-event-color);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--wcdv-event-color) 10%, white);
+  color: #243142;
+  text-decoration: none;
+  line-height: 1.25;
+}
+
+.wcdv-calendar-event--continues-before {
+  margin-left: 0;
+  border-left-width: 1px;
+  border-radius: 0 3px 3px 0;
+}
+
+.wcdv-calendar-event--continues-after {
+  margin-right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.wcdv-calendar-event--continues-before.wcdv-calendar-event--continues-after {
+  border-radius: 0;
+}
+
+.wcdv-calendar-event:hover {
+  background: color-mix(in srgb, var(--wcdv-event-color) 18%, white);
+  color: #172231;
+  text-decoration: none;
+}
+
+.wcdv-calendar-event__title,
+.wcdv-calendar-event__course,
+.wcdv-calendar-event__time {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wcdv-calendar-event__title {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wcdv-calendar-event__course {
+  margin-top: 2px;
+  color: #526174;
+  font-size: 9px;
+}
+
+.wcdv-calendar-event__time {
+  margin-top: 2px;
+  color: #5f6f82;
+  font-size: 9px;
+}
+
+.wcdv-calendar-grid--month .wcdv-calendar-event__title,
+.wcdv-calendar-grid--month .wcdv-calendar-event__time {
+  font-size: 9px;
+}
+
+.wcdv-calendar-empty {
+  position: sticky;
+  left: 0;
+  width: min(100%, 700px);
+  margin: -1px 0 0;
+  padding: 16px;
+  background: #fff;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .wcdv-filter-tail {
+    margin-left: 0;
+  }
 }
 
 #wcdv-root.wcdv-embedded.wcdv-body-anchor .wcdv-wc-list {

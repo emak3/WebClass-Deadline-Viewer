@@ -83,6 +83,7 @@ async function syncContentScriptsFromStorage() {
         "src/content/item-navigation.js",
         "src/content/storage.js",
         "src/content/search-panel.js",
+        "src/content/calendar-panel.js",
         "src/content/main-panel.js",
       ],
       css: ["src/content/content.css", "src/content/list-panel.css"],

@@ -14,6 +14,8 @@
     wcdvAutoBulkStaleAttempted: false,
     wcdvBulkPort: null,
     wcdvSubmittedListRefreshTimer: null,
+    wcdvCalendarAnchorMs: null,
+    wcdvLatestDisplayItems: [],
     saveToastTimer: null,
     LABEL_TEXT: "利用可能期間",
     PERIOD_RE:
